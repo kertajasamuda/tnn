@@ -14,13 +14,19 @@
 #include <fnv1a.h>
 #include <xxhash64.h>
 #include "astrobwtv3.h"
-#include "powtest.h"
+#include "astrotest.hpp"
 
 #include <unordered_map>
 #include <array>
 #include <algorithm>
-#include <xmmintrin.h>
-#include <emmintrin.h>
+
+#ifdef __X86_64__
+  #include <xmmintrin.h>
+  #include <emmintrin.h>
+#endif
+#ifdef __aarch64__
+  #include "astro_aarch64.hpp"
+#endif
 
 #include <random>
 #include <chrono>
@@ -56,7 +62,9 @@ extern "C"
 // #include <device_sa.cuh>
 #include <lookup.h>
 // #include <sacak-lcp.h>
-#include "immintrin.h"
+#ifdef __X86_64__
+  #include "immintrin.h"
+#endif
 #include "dc3.hpp"
 // #include "fgsaca.hpp"
 #include <hugepages.h>
@@ -359,6 +367,8 @@ __m256i _mm256_reverse_epi8(__m256i input) {
 
 #endif
 
+/*
+// FIXME: Can this be delete?  Test on AARCH64 and AMD64
 void optest(int op, workerData &worker, bool print=true) {
   if (print) {
     printf("Scalar\n--------------\npre op %d: ", op);
@@ -3464,7 +3474,9 @@ void optest(int op, workerData &worker, bool print=true) {
     printf("\n took %ld ns\n------------\n", time.count());
   }
 }
+*/
 
+#ifdef __X86_64__
 void optest_simd(int op, workerData &worker, bool print=true) {
   if (print){
     printf("SIMD\npre op %d: ", op);
@@ -7064,6 +7076,7 @@ void optest_simd(int op, workerData &worker, bool print=true) {
     printf("\n took %ld ns\n", time.count());
   }
 }
+#endif
 
 void optest_lookup(int op, workerData &worker, bool print=true) {
   if (print){
@@ -7172,19 +7185,23 @@ void runOpTests(int op, int len) {
   }
   printf("\n");
 
+  OpTestResult *opResult = new OpTestResult;
   // WARMUP, don't print times
   memcpy(&worker->step_3, test, 16);
   // optest(0, *worker, false);
-  optest(op, *worker, false);
+  optest(op, *worker, test, *opResult, false);
   // WARMUP, don't print times
-  optest(op, *worker);
+  optest(op, *worker, test, *opResult);
 
-  // WARMUP, don't print times
-  memcpy(&worker->step_3, test,  16);
-  // optest_simd(0, *worker, false);
-  optest_simd(op, *worker, false);
-  // Primary benchmarking
-  optest_simd(op, *worker);
+  #ifdef __X86_64__
+    // WARMUP, don't print times
+    memcpy(&worker->step_3, test,  16);
+    // optest_simd(0, *worker, false);
+    optest_simd(op, *worker, false);
+    // Primary benchmarking
+    optest_simd(op, *worker);
+  #endif
+
 
   // WARMUP, don't print times
   memcpy(&worker->step_3, test,  16);
@@ -7194,12 +7211,21 @@ void runOpTests(int op, int len) {
   optest_lookup(op, *worker);
 
   for(int i = 0; i < 256; i++) {
+    OpTestResult *controlResult = new OpTestResult;
+    OpTestResult *testResult = new OpTestResult;
     memset(&worker->step_3, 0, 256);
     memset(&worker2->step_3, 0, 256);
     memcpy(&worker->step_3, test, len+1);
-    optest(i, *worker, false);
+    optest(i, *worker, test, *controlResult, false);
     memcpy(&worker2->step_3, test, len+1);
-    optest_simd(i, *worker2, false);
+    #ifdef __X86_64__
+      // FIXME:
+      optest_simd(i, *worker2, false);
+    #endif
+    #ifdef __aarch64__
+      OpTestResult *aarchResult = new OpTestResult;
+      optest_aarch64(i, *worker2, test, *testResult, false);
+    #endif
 
     std::string str1 = hexStr(&(*worker).step_3[0], len);
     std::string str2 = hexStr(&(*worker2).step_3[0], len);
@@ -7472,6 +7498,7 @@ void runDivsufsortBenchmark() {
   std::cout << "Average DC3 time:       " << saislcpAverage << " seconds" << std::endl;
 }
 
+/*
 void TestAstroBWTv3()
 {
   std::srand(1);
@@ -7613,6 +7640,7 @@ void TestAstroBWTv3repeattest()
   }
   std::cout << "Repeated test over" << std::endl;
 }
+*/
 
 #if defined(__AVX2__)
 
@@ -7710,12 +7738,19 @@ void AstroBWTv3(byte *input, int inputLen, byte *outputhash, workerData &worker,
 
     if (lookupMine) {
       // start = std::chrono::steady_clock::now();
+      #ifdef __X86_64__
+      // FIXME. lookupCompute uses AVX intrinsics that can be worked around using regular loops. Dirkers GitHub branches have this somewhere...
       lookupCompute(worker);
+      #endif
       // end = std::chrono::steady_clock::now();
     }
     else {
       // start = std::chrono::steady_clock::now();
+      #ifdef __X86_64__
       branchComputeCPU_avx2(worker);
+      #else
+      branchComputeCPU_aarch64(worker, false);
+      #endif
       // end = std::chrono::steady_clock::now();
     }
     
@@ -7775,41 +7810,45 @@ void AstroBWTv3(byte *input, int inputLen, byte *outputhash, workerData &worker,
 }
 
 
-void branchComputeCPU(workerData &worker)
+void branchComputeCPU(workerData &worker, bool isTest)
 {
   while (true)
   {
-    worker.tries++;
-    worker.random_switcher = worker.prev_lhash ^ worker.lhash ^ worker.tries;
-    // printf("%d worker.random_switcher %d %08jx\n", worker.tries, worker.random_switcher, worker.random_switcher);
+    if(isTest) {
 
-    worker.op = static_cast<byte>(worker.random_switcher);
-    if (debugOpOrder) worker.opsA.push_back(worker.op);
+    } else {
+      worker.tries++;
+      worker.random_switcher = worker.prev_lhash ^ worker.lhash ^ worker.tries;
+      // printf("%d worker.random_switcher %d %08jx\n", worker.tries, worker.random_switcher, worker.random_switcher);
 
-    // printf("op: %d\n", worker.op);
+      worker.op = static_cast<byte>(worker.random_switcher);
+      if (debugOpOrder) worker.opsA.push_back(worker.op);
 
-    worker.pos1 = static_cast<byte>(worker.random_switcher >> 8);
-    worker.pos2 = static_cast<byte>(worker.random_switcher >> 16);
+      // printf("op: %d\n", worker.op);
 
-    if (worker.pos1 > worker.pos2)
-    {
-      std::swap(worker.pos1, worker.pos2);
-    }
+      worker.pos1 = static_cast<byte>(worker.random_switcher >> 8);
+      worker.pos2 = static_cast<byte>(worker.random_switcher >> 16);
 
-    if (worker.pos2 - worker.pos1 > 32)
-    {
-      worker.pos2 = worker.pos1 + ((worker.pos2 - worker.pos1) & 0x1f);
-    }
+      if (worker.pos1 > worker.pos2)
+      {
+        std::swap(worker.pos1, worker.pos2);
+      }
 
-    // fmt::printf("op: %d, ", worker.op);
-    // fmt::printf("worker.pos1: %d, worker.pos2: %d\n", worker.pos1, worker.pos2);
+      if (worker.pos2 - worker.pos1 > 32)
+      {
+        worker.pos2 = worker.pos1 + ((worker.pos2 - worker.pos1) & 0x1f);
+      }
 
-    if (debugOpOrder && worker.op == sus_op) {
-      printf("Pre op %d, pos1: %d, pos2: %d::\n", worker.op, worker.pos1, worker.pos2);
-      for (int i = 0; i < 256; i++) {
-          printf("%02X ", worker.step_3[i]);
-      } 
-      printf("\n");
+      // fmt::printf("op: %d, ", worker.op);
+      // fmt::printf("worker.pos1: %d, worker.pos2: %d\n", worker.pos1, worker.pos2);
+
+      if (debugOpOrder && worker.op == sus_op) {
+        printf("Pre op %d, pos1: %d, pos2: %d::\n", worker.op, worker.pos1, worker.pos2);
+        for (int i = 0; i < 256; i++) {
+            printf("%02x ", worker.step_3[i]);
+        } 
+        printf("\n");
+      }
     }
 
     switch (worker.op)
@@ -10893,6 +10932,10 @@ void branchComputeCPU(workerData &worker)
       }
       break;
     default:
+      break;
+    }
+
+    if(isTest) {
       break;
     }
 
@@ -14732,6 +14775,7 @@ void branchComputeCPU_avx2(workerData &worker)
 // Compute the new values for worker.step_3 using layered lookup tables instead of
 // branched computational operations
 
+#if defined(__X64_64__)
 void lookupCompute(workerData &worker)
 {
   while (true)
@@ -15039,6 +15083,7 @@ after:
   }
   worker.data_len = static_cast<uint32_t>((worker.tries - 4) * 256 + (((static_cast<uint64_t>(worker.chunk[253]) << 8) | static_cast<uint64_t>(worker.chunk[254])) & 0x3ff));
 }
+#endif
 
 /*
 void lookupCompute_SA(workerData &worker)

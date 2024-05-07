@@ -45,7 +45,7 @@
 #include <hex.h>
 #include <astrobwtv3.h>
 // #include <astrobwtv3_cuda.cuh>
-#include <powtest.h>
+#include <astrotest.hpp>
 #include <thread>
 
 #include <xelis-hash.hpp>
@@ -2094,7 +2094,11 @@ int main(int argc, char **argv)
   // Ensure we capture *all* of the other options before we start using goto
   if (vm.count("dero-test"))
   {
-    goto Testing;
+    int rc = DeroTesting(testOp, testLen, useLookupMine);
+    if(rc > 255) {
+      rc = 1;
+    }
+    return rc;
   }
   if (vm.count("dero-benchmark"))
   {
@@ -2266,27 +2270,7 @@ fillBlanks:
 }
 
   goto Mining;
-Testing:
-{
-  Num diffTest("20000", 10);
 
-  if (testOp >= 0)
-  {
-    if (testLen >= 0)
-    {
-      runOpTests(testOp, testLen);
-    }
-    else
-    {
-      runOpTests(testOp);
-    }
-  }
-  TestAstroBWTv3();
-  // TestAstroBWTv3_cuda();
-  // TestAstroBWTv3repeattest();
-  boost::this_thread::sleep_for(boost::chrono::seconds(3));
-  return 0;
-}
 Benchmarking:
 {
   if (threads <= 0)

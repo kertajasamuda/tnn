@@ -66,7 +66,7 @@ int runDeroOpTests(int op, int len=15);
 int runDeroVerificationTests(bool useLookup, int dataLen);
 
 int TestAstroBWTv3(bool useLookup);
-void TestAstroBWTv3repeattest();
+int TestAstroBWTv3repeattest(bool useLookup);
 
 void optest(int op, workerData &worker, byte testData[32], OpTestResult &testRes, bool print=true);
 //void optest_lookup(int op, workerData &worker, byte testData[32], OpTestResult &testRes, bool print=true);

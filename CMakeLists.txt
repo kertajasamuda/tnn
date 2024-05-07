@@ -1,8 +1,27 @@
 cmake_minimum_required(VERSION 3.16.3)
 
+include(CMakePrintHelpers)
+
+project(
+  Tnn-miner
+  VERSION 0.3.2
+  DESCRIPTION "Open Source Astrobwt Miner"
+)
+
+
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE}   -static -O3 -fPIE -ftree-vectorize -DNDEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -static -O3 -pthread -m64 -march=native -Wuninitialized -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -static -O3 -pthread -Wuninitialized -DNDEBUG")
+
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+  set(MARCH "armv8-a")
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flax-vector-conversions -mcpu=cortex-a55")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flax-vector-conversions -mcpu=cortex-a55")
+else()
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE}")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -m64 -march=native")
+endif()
+
 
 if(USE_GCC)
   set(CMAKE_C_COMPILER gcc)
@@ -11,18 +30,18 @@ if(USE_GCC)
   set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-deprecated-declarations")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
 else()
-  set(CMAKE_C_COMPILER clang)
-  set(CMAKE_CXX_COMPILER clang++)
+  #set(CMAKE_C_COMPILER clang)
+  #set(CMAKE_CXX_COMPILER clang++)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
   set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-deprecated")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated")
 endif()
 
-project(
-  Tnn-miner
-  VERSION 0.3.2
-  DESCRIPTION "Open Source Astrobwt Miner"
-)
+#project(
+#  Tnn-miner
+#  VERSION 0.3.2
+#  DESCRIPTION "Open Source Astrobwt Miner"
+#)
 
 # if(WIN32)
 # set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")

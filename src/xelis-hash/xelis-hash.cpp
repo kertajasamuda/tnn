@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <iostream>
 
-#include <emmintrin.h>
-#include <immintrin.h>
+#ifdef __X86_64__
+  #include <emmintrin.h>
+  #include <immintrin.h>
+#endif
 #include <numeric>
 #include <chrono>
 #include <cstring>
@@ -15,6 +17,8 @@
 #else
 #include <arpa/inet.h>
 #endif
+
+#ifdef __X86_64__
 
 #define rl64(x, a) (((x << a % 64) | (x >> (64 - a % 64))))
 
@@ -893,3 +897,16 @@ void xelis_runTests()
     std::cout << "XELIS-HASH: Some tests failed!" << std::endl;
   }
 }
+
+#else
+// These are just to satisfy compilation on AARCH64
+void xelis_hash(byte* input, workerData_xelis &worker, byte *hashResult) {
+}
+
+void xelis_benchmark_cpu_hash() {
+}
+
+void xelis_runTests() {
+}
+
+#endif // __X86_64__

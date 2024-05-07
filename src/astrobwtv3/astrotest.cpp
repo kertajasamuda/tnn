@@ -300,9 +300,8 @@ int TestAstroBWTv3(bool useLookup=false)
   printf("Str: %s\nHex: %s\n", c.c_str(), hexStr(data, 48).c_str());
   printf("Str: %s\nHex: %s\n", c2.c_str(), hexStr(data2, 48).c_str());
 
-  TestAstroBWTv3repeattest();
-  //#failedTests += TestAstroBWTv3repeattest(true);
-  //failedTests += TestAstroBWTv3repeattest(false);
+  failedTests += TestAstroBWTv3repeattest(true);
+  failedTests += TestAstroBWTv3repeattest(false);
 
   // for (int i = 0; i < 1024; i++)
   // {
@@ -360,7 +359,7 @@ int TestAstroBWTv3repeattest(bool useLookup)
     if (i % 2 == 0)
     {
       byte res[32];
-      AstroBWTv3(data, 48, res, *worker, true);
+      AstroBWTv3(data, 48, res, *worker, false);
 
       // hexStr(res, 64);
       std::string s = hexStr(res, 32);

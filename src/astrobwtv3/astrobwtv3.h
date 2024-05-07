@@ -29,7 +29,12 @@
 // #include <cuda.h>
 // #include <cuda_runtime.h>
 
-#include "immintrin.h"
+#ifdef __X86_64__
+  #include "immintrin.h"
+#endif
+#ifdef __aarch64__
+  #include <arm_neon.h>
+#endif
 #include "libsais.h"
 
 #ifndef POW_CONST
@@ -139,6 +144,10 @@ const __m256i vec_3 = _mm256_set1_epi8(3);
 class workerData
 {
 public:
+  // For aarch64
+  byte fixme[256];
+  byte opt[256];
+
   byte step_3[256];
   int freq[256];
 
@@ -474,7 +483,7 @@ inline void insertElement(T* arr, int& size, int capacity, int index, const T& e
 void processAfterMarker(workerData& worker);
 void lookupCompute(workerData &worker);
 void lookupCompute_SA(workerData &worker);
-void branchComputeCPU(workerData &worker);
+void branchComputeCPU(workerData &worker, bool isTest);
 
 void branchComputeCPU_avx2(workerData &worker);
 void branchComputeCPU_avx(workerData &worker);
