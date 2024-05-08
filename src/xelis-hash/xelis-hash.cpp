@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <iostream>
 
-#ifdef __X86_64__
+#if defined(__X86_64__)
   #include <emmintrin.h>
   #include <immintrin.h>
 #endif
@@ -18,7 +18,7 @@
 #include <arpa/inet.h>
 #endif
 
-#ifdef __X86_64__
+#if defined(__X86_64__)
 
 #define rl64(x, a) (((x << a % 64) | (x >> (64 - a % 64))))
 

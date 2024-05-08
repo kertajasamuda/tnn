@@ -260,7 +260,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
     //  break;
     //}
 
-    memcpy(worker.fixme, &worker.chunk[worker.pos2], 16);
+    memcpy(worker.aarchFixup, &worker.chunk[worker.pos2], 16);
     switch (worker.op)
     {
     case 0:
@@ -299,7 +299,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 2:
@@ -321,7 +321,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
           data = xor_with_bittable(data);
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
     }
       break;
     case 3:
@@ -346,7 +346,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
     }
       break;
     case 4:
@@ -369,7 +369,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
     }
       break;
     case 5:
@@ -391,7 +391,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
     break;
     case 6:
@@ -413,13 +413,13 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 7:
       {
         worker.opt[worker.op] = true;
-        memcpy(worker.fixme, &worker.chunk[worker.pos2], 16);
+        memcpy(worker.aarchFixup, &worker.chunk[worker.pos2], 16);
         // uint8x16_t p2vec = vdupq_n_u8(worker.chunk[worker.pos2]);
 
         for (int i = worker.pos1; i < worker.pos2; i += 16) {
@@ -443,13 +443,13 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
             //data = vmulq_u8(data, data);
             //vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 8:
       {
         worker.opt[worker.op] = true;
-        memcpy(worker.fixme, &worker.chunk[worker.pos2], 16);
+        memcpy(worker.aarchFixup, &worker.chunk[worker.pos2], 16);
         // uint8x16_t p2vec = vdupq_n_u8(worker.chunk[worker.pos2]);
 
         for (int i = worker.pos1; i < worker.pos2; i += 16) {
@@ -470,13 +470,13 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
             //data = vmulq_u8(data, data);
             //vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 9:
       {
         worker.opt[worker.op] = true;
-        memcpy(worker.fixme, &worker.chunk[worker.pos2], 16);
+        memcpy(worker.aarchFixup, &worker.chunk[worker.pos2], 16);
         uint8x16_t p2vec = vdupq_n_u8(worker.chunk[worker.pos2]);
 
         for (int i = worker.pos1; i < worker.pos2; i += 16) {
@@ -506,7 +506,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
             //data = vmulq_u8(data, data);
             //vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 10:
@@ -528,7 +528,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 11:
@@ -549,7 +549,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 12:
@@ -571,7 +571,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 13:
@@ -593,7 +593,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 14:
@@ -615,7 +615,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 15:
@@ -637,7 +637,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 16:
@@ -659,7 +659,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 17:
@@ -681,7 +681,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 18:
@@ -699,7 +699,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 19:
@@ -721,7 +721,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 20:
@@ -745,7 +745,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 21:
@@ -770,7 +770,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 22:
@@ -792,7 +792,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 23:
@@ -813,7 +813,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 24:
@@ -835,7 +835,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 25:
@@ -858,7 +858,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
       }
-      memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+      memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       break;
     case 26:
       {
@@ -879,7 +879,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 27:
@@ -901,7 +901,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 28:
@@ -923,7 +923,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 29:
@@ -945,7 +945,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 30:
@@ -967,7 +967,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 31:
@@ -989,7 +989,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 32:
@@ -1003,12 +1003,12 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
             data = rotate_and_xor(data, 2);
             vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 33:
       worker.opt[worker.op] = true;
-      memcpy(worker.fixme, &worker.chunk[worker.pos2], 16);
+      memcpy(worker.aarchFixup, &worker.chunk[worker.pos2], 16);
       for (int i = worker.pos1; i < worker.pos2; i += 16) {
           // Load 16 bytes (128 bits) of data from chunk
           uint8x16_t data = vld1q_u8(&worker.chunk[i]);
@@ -1026,7 +1026,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
           data = vmulq_u8(data, data);
           vst1q_u8(&worker.chunk[i], data);
       }
-      memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+      memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       break;
     case 34:
       {
@@ -1047,7 +1047,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 35:
@@ -1069,7 +1069,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 36:
@@ -1091,7 +1091,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 37:
@@ -1113,7 +1113,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 38:
@@ -1135,7 +1135,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 39:
@@ -1157,7 +1157,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 40:
@@ -1179,7 +1179,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 41:
@@ -1201,7 +1201,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 42:
@@ -1247,7 +1247,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 45:
@@ -1317,7 +1317,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 50:
@@ -1351,7 +1351,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 52:
@@ -1385,7 +1385,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 54:
@@ -1421,7 +1421,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 56:
@@ -1563,7 +1563,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 67:
@@ -1693,7 +1693,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 77:
@@ -1727,7 +1727,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 79:
@@ -1836,7 +1836,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 87:
@@ -1956,8 +1956,8 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
         vst1q_u8(&worker.chunk[i], shifted_a);
       }
-      //memcpy(&worker.chunk[worker.pos2], fixme, (worker.pos2-worker.pos1)%16);
-      memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+      //memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, (worker.pos2-worker.pos1)%16);
+      memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
     }
       break;
     case 96:
@@ -2291,7 +2291,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 123:
@@ -2373,7 +2373,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 129:
@@ -2587,7 +2587,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 146:
@@ -3113,7 +3113,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       break;
     case 189:
@@ -3851,7 +3851,7 @@ void branchComputeCPU_aarch64(workerData &worker, bool isTest)
 
           vst1q_u8(&worker.chunk[i], data);
         }
-        memcpy(&worker.chunk[worker.pos2], worker.fixme, 16);
+        memcpy(&worker.chunk[worker.pos2], worker.aarchFixup, 16);
       }
       /*
 #pragma GCC unroll 32

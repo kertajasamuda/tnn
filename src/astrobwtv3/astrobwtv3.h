@@ -29,10 +29,10 @@
 // #include <cuda.h>
 // #include <cuda_runtime.h>
 
-#ifdef __X86_64__
+#if defined(__X86_64__)
   #include "immintrin.h"
 #endif
-#ifdef __aarch64__
+#if defined(__aarch64__)
   #include <arm_neon.h>
 #endif
 #include "libsais.h"
@@ -145,7 +145,7 @@ class workerData
 {
 public:
   // For aarch64
-  byte fixme[256];
+  byte aarchFixup[256];
   byte opt[256];
 
   byte step_3[256];
@@ -190,7 +190,7 @@ public:
   byte sData[MAX_LENGTH+64];
   byte chunkCache[256];
 
-  #ifdef __AVX2__
+  #if defined(__AVX2__)
   alignas(32) __m256i maskTable[32];
   __m256i simd_data;
   __m256i simd_old;
@@ -485,9 +485,6 @@ void lookupCompute(workerData &worker, bool isTest);
 void branchComputeCPU(workerData &worker, bool isTest);
 
 void branchComputeCPU_avx2(workerData &worker, bool isTest);
-//void branchComputeCPU_avx(workerData &worker);
-//void branchComputeCPU_sse2(workerData &worker);
-//void branchComputeCPU_neon(workerData &worker);
 
 void AstroBWTv3(byte *input, int inputLen, byte *outputhash, workerData &scratch, bool lookupMine);
 

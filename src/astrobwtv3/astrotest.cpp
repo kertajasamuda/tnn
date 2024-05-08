@@ -93,13 +93,20 @@ int runDeroVerificationTests(bool useLookup, int dataLen=15) {
     optest_branchcpu(op, *controlWorker, test, *controlResult, false);
     //printf("  Op: %3d - %6ld ns\n", op, controlResult->duration_ns);
 
+    std::string resultText = std::string("Lookup");
     testWorker->pos1 = 0; testWorker->pos2 = 16;
     if(useLookup) {
       optest_lookup(op, *testWorker, test, *testResult, false);
     } else {
-      #ifdef __X86_64__
+      #if defined(__AVX2__)
+      resultText = "AVX2";
       optest_avx2(op, *testWorker, test, *testResult, false);
-      #else
+      #elif defined(__X86_64__)
+      resultText = "Branch";
+      optest_branchcpu(op, *testWorker, test, *testResult, false);
+      #endif
+      #if defined(__aarch64__)
+      resultText = "AA64";
       optest_aarch64(op, *testWorker, test, *testResult, false);
       #endif
     }
@@ -121,15 +128,18 @@ int runDeroVerificationTests(bool useLookup, int dataLen=15) {
         printf("%02x", controlResult->result[i]);
       }
       printf("\n");
+      printf("%7s: ", resultText.c_str());
+      /*
       if(useLookup) {
         printf(" Lookup: ");
       } else {
-        #ifdef __X86_64__
+        #if defined(__X86_64__)
         printf("   SIMD: ");
         #else
         printf("AArch64: ");
         #endif
       }
+      */
 
       for (int i = 0; i < dataLen; i++) {
         printf("%02x", testResult->result[i]);
@@ -169,64 +179,39 @@ int runDeroOpTests(int op, int len) {
   }
   printf("\n");
 
-  /*
-  OpTestResult *opResult = new OpTestResult;
-  // optest(0, *worker, false);
-  optest(op, *worker, test, *opResult, false);
-  // WARMUP, don't print times
-  optest(op, *worker, test, *opResult, false);
-  // WARMUP, don't print times
-  //memset(&worker->step_3, 0, 256);
-  //memcpy(&worker->step_3, test, 16);
-  optest(op, *worker, test, *opResult);
-
-  OpTestResult *lookupResult = new OpTestResult;
-  //memset(&worker->step_3, 0, 256);
-  //memcpy(&worker->step_3, test,  16);
-  // WARMUP, don't print times
-  optest_branchcpu(op, *worker, test, *lookupResult, false);
-  // Benchmarking
-  //memset(&worker->step_3, 0, 256);
-  //memcpy(&worker->step_3, test, 16);
-  optest_branchcpu(op, *worker, test, *lookupResult);
-
-  OpTestResult *simdResult = new OpTestResult;
-  //memset(&worker->step_3, 0, 256);
-  //memcpy(&worker->step_3, test, 16);
-    // WARMUP, don't print times
-  #ifdef __X86_64__
-  optest_avx2(op, *worker, test, *simdResult, false);
-  // benchmarking
-  //memset(&worker->step_3, 0, 256);
-  //memcpy(&worker->step_3, test, 16);
-  optest_avx2(op, *worker, test, *simdResult, true);
-  #else
-  optest_aarch64(op, *worker, test, *simdResult, false);
-  optest_aarch64(op, *worker, test, *simdResult, true);
-  #endif
-  */
-
+  std::string resultText = std::string("Lookup");
   for(int i = 0; i < 256; i++) {
     //memset(&worker->step_3, 0, 256);
     //memcpy(&worker->step_3, test, len+1);
-    OpTestResult *opResult = new OpTestResult;
-    optest_branchcpu(i, *worker, test, *opResult, false);
+    OpTestResult *refResult = new OpTestResult;
+    OpTestResult *testResult = new OpTestResult;
+    //TODO: use optest_ref here instead?
+    optest_branchcpu(i, *worker, test, *refResult, false);
 
     //memset(&worker2->step_3, 0, 256);
     //memcpy(&worker2->step_3, test, len+1);
     //if(useLo)
-    #ifdef __X86_64__
+    #if defined(__AVX2__)
+    resultText = "AVX2";
     optest_avx2(i, *worker2, test, *opResult, false);
+    #elif defined(__X86_64__)
+    resultText = "Branch";
+    optest_branchcpu(i, *worker2, test, *opResult, false);
     #else
-    optest_aarch64(i, *worker2, test, *opResult, false);
+    printf("runDeroOpTests fallthrough\n");
+    opsFailed += 1;
+    #endif
+    #if defined(__aarch64__)
+    resultText = "AA64";
+    optest_aarch64(i, *worker2, test, *testResult, false);
     #endif
 
     std::string str1 = hexStr(&(*worker).step_3[0], len);
     std::string str2 = hexStr(&(*worker2).step_3[0], len);
 
     //if (str1.compare(str2) != 0) {
-    if (memcmp(worker->step_3, worker2->step_3, len) != 0) {
-      printf("op %d needs special treatment\n%s\n%s\n", i, str1.c_str(), str2.c_str());
+    if (0 != memcmp(worker->step_3, worker2->step_3, len) || 0 != memcmp(refResult->result, testResult->result, 32)) {
+      printf("%s op %d needs special treatment\n%s\n%s\n", resultText.c_str(), i, str1.c_str(), str2.c_str());
       opsFailed++;
     //} else {
     //  printf("%s = %s\n", str1.c_str(), str2.c_str());
@@ -386,7 +371,7 @@ int TestAstroBWTv3repeattest(bool useLookup)
 }
 
 
-void optest(int op, workerData &worker, byte testData[32], OpTestResult &testRes, bool print) {
+void optest_ref(int op, workerData &worker, byte testData[32], OpTestResult &testRes, bool print) {
   // Set us up the bomb
   memset(worker.step_3, 0, 256);
   memcpy(worker.step_3, testData, 32);
