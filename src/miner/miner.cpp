@@ -47,7 +47,7 @@
 #include <xelis-hash.hpp>
 #include <spectrex.h>
 
-#include <astrotest.h>
+#include <astrotest.hpp>
 #include <thread>
 
 #include <chrono>

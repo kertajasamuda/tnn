@@ -2,6 +2,7 @@
 
 #include <inttypes.h>
 #include <astrobwtv3.h>
+#include <array>
 
 // NOTES
 
