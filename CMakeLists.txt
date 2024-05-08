@@ -1,3 +1,4 @@
+# HIP support was added in CMake 3.21
 cmake_minimum_required(VERSION 3.21)
 
 include(CMakePrintHelpers)
@@ -13,16 +14,7 @@ set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE}   -static -O3 -fPIE -ftree-vectorize -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -static -O3 -pthread -Wuninitialized -DNDEBUG")
 
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
-  set(MARCH "armv8-a")
-  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flax-vector-conversions -mcpu=cortex-a55")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flax-vector-conversions -mcpu=cortex-a55")
-else()
-  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE}")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -m64 -march=native")
-endif()
-
-
+# We must set the CMAKE_*_COMPILER variables before 'project' is called
 if(USE_GCC)
   set(CMAKE_C_COMPILER gcc)
   set(CMAKE_CXX_COMPILER g++)
@@ -43,6 +35,15 @@ project(
   VERSION 0.3.2
   DESCRIPTION "Open Source Astrobwt Miner"
 )
+
+# This CMAKE variable isn't defined until 'project' is called.
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flax-vector-conversions -march=armv8-a")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flax-vector-conversions -march=armv8-a")
+else()
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE}")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -m64 -march=native")
+endif()
 
 # if(WIN32)
 # set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")

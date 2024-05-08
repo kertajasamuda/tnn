@@ -12,11 +12,14 @@ inline uint8x16_t binary_not(uint8x16_t data) {
   return vmvnq_u8(data);
 }
 
-inline uint8x16_t rotate_bits(uint8x16_t left_side, int rotation) {
+inline uint8x16_t rotate_bits(uint8x16_t data, int rotation) {
   //worker.chunk[i] = std::rotl(worker.chunk[i], 3);
   //worker.chunk[i] = (worker.chunk[i] << 3) | (worker.chunk[i] >> (8 - 3));
   rotation %= 8;
-  return vorrq_u8(vshlq_n_u8(left_side, rotation), vshrq_n_u8(left_side, 8 - rotation));
+  // TODO: Find out how we can make clang tell us the different between ARMv8.2a (which compiles here) and ARMv8-a (which does not)
+  //return vorrq_u8(vshlq_n_u8(data, rotation), vshrq_n_u8(data, 8 - rotation));
+  auto rotation_amounts = vdupq_n_u8(rotation);
+  return vorrq_u8(vshlq_u8(data, rotation_amounts), vshlq_u8(data, vsubq_u8(rotation_amounts, vdupq_n_u8(8))));
 }
 
 inline uint8x16_t rotate_and_xor(uint8x16_t left_side, int rotation) {
