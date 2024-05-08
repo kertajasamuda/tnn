@@ -33,40 +33,40 @@ int DeroTesting(int testOp, int testLen, bool useLookup) {
   int failedTests = 0;
   Num diffTest("1234567890123456789", 10);
 
-  if (testOp >= 0) {
-    if (testLen >= 0) {
-      failedTests += runDeroOpTests(testOp, testLen);
-    } else {
-      failedTests += runDeroOpTests(testOp);
-    }
-    return failedTests;
+  if (testLen >= 0) {
+    failedTests += runDeroOpTests(testOp, testLen);
+  } else {
+    failedTests += runDeroOpTests(testOp);
   }
+
   failedTests += TestAstroBWTv3(useLookup);
   // TestAstroBWTv3_cuda();
 
   return failedTests;
 }
 
-int runDeroVerificationTests(bool useLookup, int dataLen=15) {
-  if(dataLen == -1 || dataLen > 255) {
-    dataLen = 32;
-  }
+int runDeroOpTests(int testOp, int dataLen) {
+  bool useLookup = false;
   int numOpsFailed = 0;
   #if defined(__AVX2__)
   testPopcnt256_epi8();
   #endif
 
-  workerData *controlWorker = new workerData;
+  workerData *controlWorker = (workerData*)malloc_huge_pages(sizeof(workerData));
   initWorker(*controlWorker);
   lookupGen(*controlWorker, nullptr, nullptr);
 
-  workerData *testWorker = new workerData;
+  workerData *testWorker = (workerData*)malloc_huge_pages(sizeof(workerData));
   initWorker(*testWorker);
   lookupGen(*testWorker, nullptr, nullptr);
 
-  byte test[255];
-  //generateInitVector<255>(test);
-  generateRandomBytes<255>(test);
+  controlWorker->pos1 = 0; controlWorker->pos2 = dataLen;
+  testWorker->pos1 = 0; testWorker->pos2 = dataLen;
+
+  byte test[32];
+  //byte test2[32];
+  std::srand(time(NULL));
+  generateInitVector<32>(test);
 
   printf("Initial Input\n");
   for (int i = 0; i < dataLen; i++) {
@@ -74,9 +74,35 @@ int runDeroVerificationTests(bool useLookup, int dataLen=15) {
   }
   printf("\n");
 
-  int max_op = 255;
-  //int data_len = 48;
-  for(int op = 0; op <= max_op; op++) {
+  std::string resultText = std::string("Lookup");
+  void (*testFunc)(int op, workerData &worker, byte testData[32], OpTestResult &testRes, bool print);
+  // the ampersand is actually optional
+  testFunc = &optest_branchcpu;
+  if(useLookup) {
+    testFunc = &optest_lookup;
+  } else {
+    #if defined(__AVX2__)
+    resultText = "AVX2";
+    testFunc = &optest_avx2;
+    #elif defined(__x86_64__)
+    resultText = "Branch";
+    testFunc = &optest_branchcpu;
+    #endif
+    #if defined(__aarch64__)
+    resultText = "AA64";
+    testFunc = &optest_aarch64;
+    #endif
+  }
+
+  int startOp = 0;
+  int maxOp = 255;
+  if(testOp >= 0) {
+    startOp = testOp;
+    maxOp = testOp;
+  }
+
+  printf("%-7s:   Branch vs %-7s ns         - Valid\n", resultText.c_str(), resultText.c_str());
+  for(int op = startOp; op <= maxOp; op++) {
     // WARMUP, don't print times
     OpTestResult *controlResult = new OpTestResult;
     OpTestResult *testResult = new OpTestResult;
@@ -93,23 +119,8 @@ int runDeroVerificationTests(bool useLookup, int dataLen=15) {
     optest_branchcpu(op, *controlWorker, test, *controlResult, false);
     //printf("  Op: %3d - %6ld ns\n", op, controlResult->duration_ns);
 
-    std::string resultText = std::string("Lookup");
     testWorker->pos1 = 0; testWorker->pos2 = 16;
-    if(useLookup) {
-      optest_lookup(op, *testWorker, test, *testResult, false);
-    } else {
-      #if defined(__AVX2__)
-      resultText = "AVX2";
-      optest_avx2(op, *testWorker, test, *testResult, false);
-      #elif defined(__x86_64__)
-      resultText = "Branch";
-      optest_branchcpu(op, *testWorker, test, *testResult, false);
-      #endif
-      #if defined(__aarch64__)
-      resultText = "AA64";
-      optest_aarch64(op, *testWorker, test, *testResult, false);
-      #endif
-    }
+    testFunc(op, *testWorker, test, *testResult, false);
 
     auto control_dur = controlResult->duration_ns.count();
     auto test_dur = testResult->duration_ns.count();
@@ -120,7 +131,7 @@ int runDeroVerificationTests(bool useLookup, int dataLen=15) {
     if(testWorker->opt[op]) {
       isOpt = '*';
     }
-    printf("%cOp: %3d - %6ld ns / %6ld ns = %6.2f %% - %s\n", isOpt, op, controlResult->duration_ns.count(), testResult->duration_ns.count(), percent_speedup, valid ? "true" : "false");
+    printf("%cOp: %3d - %7ld / %7ld = %6.2f %% - %s\n", isOpt, op, controlResult->duration_ns.count(), testResult->duration_ns.count(), percent_speedup, valid ? "true" : "false");
     if(!valid) {
       numOpsFailed++;
       printf("Vanilla: ");
@@ -135,77 +146,7 @@ int runDeroVerificationTests(bool useLookup, int dataLen=15) {
       printf("\n");
     }
   }
-
   return numOpsFailed;
-}
-
-int runDeroOpTests(int op, int len) {
-  int opsFailed = 0;
-  #if defined(__AVX2__)
-  testPopcnt256_epi8();
-  #endif
-
-  workerData *worker = (workerData*)malloc_huge_pages(sizeof(workerData));
-  initWorker(*worker);
-  lookupGen(*worker, nullptr, nullptr);
-
-  workerData *worker2 = (workerData*)malloc_huge_pages(sizeof(workerData));
-  initWorker(*worker2);
-  lookupGen(*worker2, nullptr, nullptr);
-
-  worker->pos1 = 0; worker->pos2 = len;
-  worker2->pos1 = 0; worker2->pos2 = len;
-
-  byte test[32];
-  //byte test2[32];
-  std::srand(time(NULL));
-  generateInitVector<32>(test);
-
-  printf("Initial Input : ");
-  for (int i = 0; i < 32; i++) {
-    printf("%02X ", test[i]);
-  }
-  printf("\n");
-
-  std::string resultText = std::string("Lookup");
-  for(int i = 0; i < 256; i++) {
-    //memset(&worker->step_3, 0, 256);
-    //memcpy(&worker->step_3, test, len+1);
-    OpTestResult *refResult = new OpTestResult;
-    OpTestResult *testResult = new OpTestResult;
-    //TODO: use optest_ref here instead?
-    optest_branchcpu(i, *worker, test, *refResult, false);
-
-    //memset(&worker2->step_3, 0, 256);
-    //memcpy(&worker2->step_3, test, len+1);
-    //if(useLo)
-    #if defined(__AVX2__)
-    resultText = "AVX2";
-    optest_avx2(i, *worker2, test, *testResult, false);
-    #elif defined(__x86_64__)
-    resultText = "Branch";
-    optest_branchcpu(i, *worker2, test, *testResult, false);
-    #else
-    printf("runDeroOpTests fallthrough\n");
-    opsFailed += 1;
-    #endif
-    #if defined(__aarch64__)
-    resultText = "AA64";
-    optest_aarch64(i, *worker2, test, *testResult, false);
-    #endif
-
-    std::string str1 = hexStr(&(*worker).step_3[0], len);
-    std::string str2 = hexStr(&(*worker2).step_3[0], len);
-
-    //if (str1.compare(str2) != 0) {
-    if (0 != memcmp(worker->step_3, worker2->step_3, len) || 0 != memcmp(refResult->result, testResult->result, 32)) {
-      printf("%s op %d needs special treatment\n%s\n%s\n", resultText.c_str(), i, str1.c_str(), str2.c_str());
-      opsFailed++;
-    //} else {
-    //  printf("%s = %s\n", str1.c_str(), str2.c_str());
-    }
-  }
-  return opsFailed;
 }
 
 int TestAstroBWTv3(bool useLookup=false)

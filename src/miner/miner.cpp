@@ -2100,14 +2100,6 @@ int main(int argc, char **argv)
     }
     return rc;
   }
-  if (vm.count("dero-verify"))
-  {
-    int rc = runDeroVerificationTests(useLookupMine, testLen);
-    if(rc > 255) {
-      rc = 1;
-    }
-    return rc;
-  }
   if (vm.count("dero-benchmark"))
   {
     bench_duration = vm["dero-benchmark"].as<int>();
