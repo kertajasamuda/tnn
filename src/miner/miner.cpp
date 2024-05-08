@@ -1083,7 +1083,7 @@ void xelis_stratum_session(
                   boost::asio::ssl::context::no_tlsv1_1);
 
   beast::error_code ec;
-  boost::json::error_code jsonEc;
+  boost::system::error_code jsonEc;
   boost::asio::deadline_timer deadline(ioc, boost::posix_time::seconds(1));
 
   // SSL_CTX_set_info_callback(ctx.native_handle(), openssl_log_callback);
@@ -1566,7 +1566,7 @@ void spectre_stratum_session(
                   boost::asio::ssl::context::no_tlsv1_1);
 
   beast::error_code ec;
-  boost::json::error_code jsonEc;
+  boost::system::error_code jsonEc;
   boost::asio::deadline_timer deadline(ioc, boost::posix_time::seconds(1));
 
   // SSL_CTX_set_info_callback(ctx.native_handle(), openssl_log_callback);
@@ -2095,6 +2095,14 @@ int main(int argc, char **argv)
   if (vm.count("dero-test"))
   {
     int rc = DeroTesting(testOp, testLen, useLookupMine);
+    if(rc > 255) {
+      rc = 1;
+    }
+    return rc;
+  }
+  if (vm.count("dero-verify"))
+  {
+    int rc = runDeroVerificationTests(useLookupMine, testLen);
     if(rc > 255) {
       rc = 1;
     }

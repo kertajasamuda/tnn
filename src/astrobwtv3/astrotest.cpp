@@ -85,17 +85,17 @@ int runDeroVerificationTests(bool useLookup, int dataLen=15) {
     controlWorker->pos1 = 0; controlWorker->pos2 = 16;
     //memset(&controlWorker->step_3, 0, 256);
     //memcpy(&controlWorker->step_3, test, dataLen);
-    optest(0, *controlWorker, test, *controlResult, false);
+    optest_branchcpu(0, *controlWorker, test, *controlResult, false);
 
     controlWorker->pos1 = 0; controlWorker->pos2 = 16;    
     //memset(&controlWorker->step_3, 0, 256);
     //memcpy(&controlWorker->step_3, test, dataLen);
-    optest(op, *controlWorker, test, *controlResult, false);
+    optest_branchcpu(op, *controlWorker, test, *controlResult, false);
     //printf("  Op: %3d - %6ld ns\n", op, controlResult->duration_ns);
 
     testWorker->pos1 = 0; testWorker->pos2 = 16;
     if(useLookup) {
-      optest(op, *testWorker, test, *testResult, false);
+      optest_lookup(op, *testWorker, test, *testResult, false);
     } else {
       #ifdef __X86_64__
       optest_avx2(op, *testWorker, test, *testResult, false);
@@ -169,6 +169,7 @@ int runDeroOpTests(int op, int len) {
   }
   printf("\n");
 
+  /*
   OpTestResult *opResult = new OpTestResult;
   // optest(0, *worker, false);
   optest(op, *worker, test, *opResult, false);
@@ -203,15 +204,17 @@ int runDeroOpTests(int op, int len) {
   optest_aarch64(op, *worker, test, *simdResult, false);
   optest_aarch64(op, *worker, test, *simdResult, true);
   #endif
+  */
 
   for(int i = 0; i < 256; i++) {
     //memset(&worker->step_3, 0, 256);
     //memcpy(&worker->step_3, test, len+1);
     OpTestResult *opResult = new OpTestResult;
-    optest(i, *worker, test, *opResult, false);
+    optest_branchcpu(i, *worker, test, *opResult, false);
 
     //memset(&worker2->step_3, 0, 256);
     //memcpy(&worker2->step_3, test, len+1);
+    //if(useLo)
     #ifdef __X86_64__
     optest_avx2(i, *worker2, test, *opResult, false);
     #else
@@ -3538,7 +3541,48 @@ void optest_branchcpu(int op, workerData &worker, byte testData[32], OpTestResul
   return; 
 }
 
-/*
+void optest_lookup(int op, workerData &worker, byte testData[32], OpTestResult &testRes, bool print) {
+  // Set us up the bomb
+  memset(worker.step_3, 0, 256);
+  memcpy(worker.step_3, testData, 32);
+
+  // Because lookupCompute references .chunk (which is a pointer)
+  worker.chunk = &worker.step_3[0];
+  worker.prev_chunk = worker.chunk;
+  if (print){
+    printf("Lookup\n");
+    printf("LT Input %3d  : ", op);
+    for (int i = worker.pos1; i < worker.pos1 + 32; i++) {
+      printf("%02X ", worker.chunk[i]);
+    }
+    printf("\n");
+  }
+
+  auto start = std::chrono::steady_clock::now();
+  for(int x = 0; x < 256; x++) {
+    worker.op = op;
+    //worker.pos1 = 0; worker.pos2 = 32;
+    worker.chunk = worker.step_3;
+    worker.prev_chunk = worker.chunk;
+    lookupCompute(worker, true);
+  }
+
+  auto test_end = std::chrono::steady_clock::now();
+  auto test_time = std::chrono::duration_cast<std::chrono::nanoseconds>(test_end-start);
+  testRes.duration_ns = test_time;
+  memcpy(testRes.result, worker.chunk, 256);
+  //memcpy(testRes.result, worker.salsaInput, 256);
+  if (print){
+    printf("LT result     : ");
+    for (int i = worker.pos1; i < worker.pos1 + 32; i++) {
+      printf("%02x ", worker.chunk[i]);
+    }
+    printf("\n took %ld ns\n---------------\n", test_time.count());
+  }
+  return; 
+}
+
+#if defined(__AVX2__)
 void optest_avx2(int op, workerData &worker, byte testData[32], OpTestResult &testRes, bool print) {
   // Set us up the bomb
   memset(worker.step_3, 0, 256);
@@ -3579,7 +3623,7 @@ void optest_avx2(int op, workerData &worker, byte testData[32], OpTestResult &te
   }
   return; 
 }
-*/
+#endif
 
 void optest_aarch64(int op, workerData &worker, byte testData[32], OpTestResult &testRes, bool print) {
   // Set us up the bomb

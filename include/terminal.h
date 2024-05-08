@@ -152,6 +152,7 @@ inline po::options_description get_prog_opts()
   po::options_description debug("DEBUG", col_width);
   debug.add_options()
     ("dero-test", "Runs a set of tests to verify AstrobwtV3 is working (1 test expected to fail)")
+    ("dero-verify", "Runs a more comprehensive set of verification tests")
     ("op", po::value<int>(), "Sets which branch op to benchmark (0-255), benchmark will be skipped if unspecified")
     ("len", po::value<int>(), "Sets length of the processed chunk in said benchmark (default 15)")
     ("sabench", "Runs a benchmark for divsufsort on snapshot files in the 'tests' directory")

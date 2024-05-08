@@ -481,14 +481,13 @@ inline void insertElement(T* arr, int& size, int capacity, int index, const T& e
 }
 
 void processAfterMarker(workerData& worker);
-void lookupCompute(workerData &worker);
-void lookupCompute_SA(workerData &worker);
+void lookupCompute(workerData &worker, bool isTest);
 void branchComputeCPU(workerData &worker, bool isTest);
 
-void branchComputeCPU_avx2(workerData &worker);
-void branchComputeCPU_avx(workerData &worker);
-void branchComputeCPU_sse2(workerData &worker);
-void branchComputeCPU_neon(workerData &worker);
+void branchComputeCPU_avx2(workerData &worker, bool isTest);
+//void branchComputeCPU_avx(workerData &worker);
+//void branchComputeCPU_sse2(workerData &worker);
+//void branchComputeCPU_neon(workerData &worker);
 
 void AstroBWTv3(byte *input, int inputLen, byte *outputhash, workerData &scratch, bool lookupMine);
 
