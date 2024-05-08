@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <iostream>
 
-#if defined(__X86_64__)
+#if defined(__x86_64__)
   #include <emmintrin.h>
   #include <immintrin.h>
 #endif
@@ -18,7 +18,7 @@
 #include <arpa/inet.h>
 #endif
 
-#if defined(__X86_64__)
+#if defined(__x86_64__)
 
 #define rl64(x, a) (((x << a % 64) | (x >> (64 - a % 64))))
 
@@ -909,4 +909,4 @@ void xelis_benchmark_cpu_hash() {
 void xelis_runTests() {
 }
 
-#endif // __X86_64__
+#endif // __x86_64__

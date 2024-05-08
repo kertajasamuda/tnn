@@ -101,7 +101,7 @@ int runDeroVerificationTests(bool useLookup, int dataLen=15) {
       #if defined(__AVX2__)
       resultText = "AVX2";
       optest_avx2(op, *testWorker, test, *testResult, false);
-      #elif defined(__X86_64__)
+      #elif defined(__x86_64__)
       resultText = "Branch";
       optest_branchcpu(op, *testWorker, test, *testResult, false);
       #endif
@@ -129,18 +129,6 @@ int runDeroVerificationTests(bool useLookup, int dataLen=15) {
       }
       printf("\n");
       printf("%7s: ", resultText.c_str());
-      /*
-      if(useLookup) {
-        printf(" Lookup: ");
-      } else {
-        #if defined(__X86_64__)
-        printf("   SIMD: ");
-        #else
-        printf("AArch64: ");
-        #endif
-      }
-      */
-
       for (int i = 0; i < dataLen; i++) {
         printf("%02x", testResult->result[i]);
       }
@@ -193,10 +181,10 @@ int runDeroOpTests(int op, int len) {
     //if(useLo)
     #if defined(__AVX2__)
     resultText = "AVX2";
-    optest_avx2(i, *worker2, test, *opResult, false);
-    #elif defined(__X86_64__)
+    optest_avx2(i, *worker2, test, *testResult, false);
+    #elif defined(__x86_64__)
     resultText = "Branch";
-    optest_branchcpu(i, *worker2, test, *opResult, false);
+    optest_branchcpu(i, *worker2, test, *testResult, false);
     #else
     printf("runDeroOpTests fallthrough\n");
     opsFailed += 1;
@@ -3610,6 +3598,7 @@ void optest_avx2(int op, workerData &worker, byte testData[32], OpTestResult &te
 }
 #endif
 
+#if defined(__aarch64__)
 void optest_aarch64(int op, workerData &worker, byte testData[32], OpTestResult &testRes, bool print) {
   // Set us up the bomb
   memset(worker.step_3, 0, 256);
@@ -3650,3 +3639,4 @@ void optest_aarch64(int op, workerData &worker, byte testData[32], OpTestResult 
   }
   return; 
 }
+#endif
