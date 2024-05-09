@@ -1,5 +1,5 @@
 # HIP support was added in CMake 3.21
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.16.3)
 
 include(CMakePrintHelpers)
 
@@ -57,7 +57,7 @@ endif()
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fstack-protector")
 
 set (CMAKE_STANDARD_REQUIRED TRUE)
-set (CMAKE_CXX_STANDARD 23)
+set (CMAKE_CXX_STANDARD 20)
 
 enable_language(ASM)
 
