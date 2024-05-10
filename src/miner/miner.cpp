@@ -100,7 +100,7 @@ boost::mutex wsMutex;
 
 json job = json({});
 json devJob = json({});
-;
+
 boost::json::object share = {};
 boost::json::object devShare = {};
 
@@ -159,12 +159,12 @@ void openssl_log_callback(const SSL *ssl, int where, int ret)
 // Report a failure
 void fail(beast::error_code ec, char const *what) noexcept
 {
-  mutex.lock();
+  wsMutex.lock();
   setcolor(RED);
   std::cerr << '\n'
             << what << ": " << ec.message() << "\n";
   setcolor(BRIGHT_WHITE);
-  mutex.unlock();
+  wsMutex.unlock();
 }
 
 void dero_session(
@@ -266,9 +266,9 @@ void dero_session(
       {
         boost::json::object *S = isDev ? &devShare : &share;
         std::string msg = boost::json::serialize(*S);
-        // mutex.lock();
+        // wsMutex.lock();
         // std::cout << msg;
-        // mutex.unlock();
+        // wsMutex.unlock();
         ws.async_write(boost::asio::buffer(msg), yield[ec]);
         if (ec)
         {
@@ -290,13 +290,13 @@ void dero_session(
           json workData = json::parse(workInfo.str());
           if ((isDev ? (workData.at("height") != devHeight) : (workData.at("height") != ourHeight)))
           {
-            // mutex.lock();
+            // wsMutex.lock();
             if (isDev)
               devJob = workData;
             else
               job = workData;
             json *J = isDev ? &devJob : &job;
-            // mutex.unlock();
+            // wsMutex.unlock();
 
             if ((*J).at("lasterror") != "")
             {
@@ -318,14 +318,14 @@ void dero_session(
               rejected = (*J).at("rejected");
               if (!isConnected)
               {
-                mutex.lock();
+                wsMutex.lock();
                 setcolor(BRIGHT_YELLOW);
                 printf("Mining at: %s/ws/%s\n", host.c_str(), wallet.c_str());
                 setcolor(CYAN);
                 printf("Dev fee: %.2f", devFee);
                 std::cout << "%" << std::endl;
                 setcolor(BRIGHT_WHITE);
-                mutex.unlock();
+                wsMutex.unlock();
               }
               isConnected = isConnected || true;
               jobCounter++;
@@ -337,11 +337,11 @@ void dero_session(
               devHeight = (*J).at("height");
               if (!devConnected)
               {
-                mutex.lock();
+                wsMutex.lock();
                 setcolor(CYAN);
                 printf("Connected to dev node: %s\n", devPool);
                 setcolor(BRIGHT_WHITE);
-                mutex.unlock();
+                wsMutex.unlock();
               }
               devConnected = devConnected || true;
               jobCounter++;
@@ -519,14 +519,14 @@ void xelis_session(
 
                 if (!isConnected)
                 {
-                  mutex.lock();
+                  wsMutex.lock();
                   setcolor(BRIGHT_YELLOW);
                   printf("Mining at: %s/getwork/%s/%s\n", host.c_str(), wallet.c_str(), worker.c_str());
                   setcolor(CYAN);
                   printf("Dev fee: %.2f", devFee);
                   std::cout << "%" << std::endl;
                   setcolor(BRIGHT_WHITE);
-                  mutex.unlock();
+                  wsMutex.unlock();
                 }
                 isConnected = true;
                 jobCounter++;
@@ -539,11 +539,11 @@ void xelis_session(
 
                 if (!devConnected)
                 {
-                  mutex.lock();
+                  wsMutex.lock();
                   setcolor(CYAN);
                   printf("Connected to dev node: %s\n", host.c_str());
                   setcolor(BRIGHT_WHITE);
-                  mutex.unlock();
+                  wsMutex.unlock();
                 }
                 devConnected = true;
                 jobCounter++;
@@ -767,7 +767,6 @@ int handleXatumPacket(Xatum::packet xPacket, bool isDev)
 
   if (command == Xatum::print)
   {
-    mutex.lock();
     if (Xatum::accepted.compare(data.at("msg").get<std::string>()) == 0)
       accepted++;
 
@@ -785,6 +784,7 @@ int handleXatumPacket(Xatum::packet xPacket, bool isDev)
       printf("DEV | ");
     }
 
+    wsMutex.lock();
     switch (msgLevel)
     {
     case Xatum::ERROR_MSG:
@@ -813,7 +813,7 @@ int handleXatumPacket(Xatum::packet xPacket, bool isDev)
     printf("%s\n", data.at("msg").get<std::string>().c_str());
 
     setcolor(BRIGHT_WHITE);
-    mutex.unlock();
+    wsMutex.unlock();
   }
 
   else if (command == Xatum::newJob)
@@ -850,22 +850,22 @@ int handleXatumPacket(Xatum::packet xPacket, bool isDev)
     {
       if (!isDev)
       {
-        mutex.lock();
+        wsMutex.lock();
         setcolor(BRIGHT_YELLOW);
         printf("Mining at: %s to wallet %s\n", host.c_str(), wallet.c_str());
         setcolor(CYAN);
         printf("Dev fee: %.2f", devFee);
         std::cout << "%" << std::endl;
         setcolor(BRIGHT_WHITE);
-        mutex.unlock();
+        wsMutex.unlock();
       }
       else
       {
-        mutex.lock();
+        wsMutex.lock();
         setcolor(CYAN);
         printf("Connected to dev node: %s\n", host.c_str());
         setcolor(BRIGHT_WHITE);
-        mutex.unlock();
+        wsMutex.unlock();
       }
     }
 
@@ -1109,11 +1109,11 @@ void xelis_stratum_session(
     {
       bool *C = isDev ? &devConnected : &isConnected;
       (*C) = false;
-      mutex.lock();
+      wsMutex.lock();
       setcolor(RED);
       std::cerr << e.what() << std::endl;
       setcolor(BRIGHT_WHITE);
-      mutex.unlock();
+      wsMutex.unlock();
       return fail(ec, "Stratum session error");
     }
     boost::this_thread::sleep_for(boost::chrono::milliseconds(125));
@@ -1132,12 +1132,12 @@ int handleXStratumPacket(boost::json::object packet, bool isDev)
     if (ourHeight > 0 && packet.at("params").as_array()[4].get_bool() != true)
       return 0;
 
-    mutex.lock();
+    wsMutex.lock();
     setcolor(CYAN);
     if (!isDev)
       printf("\nStratum: new job received\n");
     setcolor(BRIGHT_WHITE);
-    mutex.unlock();
+    wsMutex.unlock();
 
     XelisStratum::lastReceivedJobTime = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
@@ -1164,22 +1164,22 @@ int handleXStratumPacket(boost::json::object packet, bool isDev)
     {
       if (!isDev)
       {
-        mutex.lock();
+        wsMutex.lock();
         setcolor(BRIGHT_YELLOW);
         printf("Mining at: %s to wallet %s\n", host.c_str(), wallet.c_str());
         setcolor(CYAN);
         printf("Dev fee: %.2f", devFee);
         std::cout << "%" << std::endl;
         setcolor(BRIGHT_WHITE);
-        mutex.unlock();
+        wsMutex.unlock();
       }
       else
       {
-        mutex.lock();
+        wsMutex.lock();
         setcolor(CYAN);
         printf("Connected to dev node: %s\n", host.c_str());
         setcolor(BRIGHT_WHITE);
-        mutex.unlock();
+        wsMutex.unlock();
       }
     }
 
@@ -1228,7 +1228,7 @@ int handleXStratumPacket(boost::json::object packet, bool isDev)
         printf("DEV | ");
       }
 
-      mutex.lock();
+      wsMutex.lock();
       switch (lLevel)
       {
       case XelisStratum::STRATUM_INFO:
@@ -1253,7 +1253,7 @@ int handleXStratumPacket(boost::json::object packet, bool isDev)
       printf("%s\n", packet.at("params").as_array()[1].as_string().c_str());
 
       setcolor(BRIGHT_WHITE);
-      mutex.unlock();
+      wsMutex.unlock();
 
       return res;
     }
@@ -1296,7 +1296,7 @@ int handleXStratumResponse(boost::json::object packet, bool isDev)
   break;
   case XelisStratum::submitID:
   {
-    mutex.lock();
+    wsMutex.lock();
     printf("\n");
     if (isDev)
     {
@@ -1317,7 +1317,7 @@ int handleXStratumResponse(boost::json::object packet, bool isDev)
       std::cout << "Stratum: share rejected: " << packet.at("error").get_object()["message"].get_string() << std::endl;
       setcolor(BRIGHT_WHITE);
     }
-    mutex.unlock();
+    wsMutex.unlock();
     break;
   }
   }
@@ -1430,23 +1430,32 @@ void spectre_stratum_session(
   // packet.at("params") = {minerName};
   std::string subscription = boost::json::serialize(packet) + "\n";
 
-  // std::cout << subscription << std::endl;
+  // std::cout << authResString << std::endl;
 
   beast::get_lowest_layer(stream).expires_after(std::chrono::seconds(30));
   trans = boost::asio::async_write(stream, boost::asio::buffer(subscription), yield[ec]);
   if (ec)
     return fail(ec, "Stratum subscribe");
 
-  beast::get_lowest_layer(stream).expires_after(std::chrono::seconds(30));
-  trans = boost::asio::read_until(stream, subRes, "\n");
+  // beast::get_lowest_layer(stream).expires_after(std::chrono::seconds(30));
+  // trans = boost::asio::read_until(stream, subRes, "\n");
 
-  std::string subResString = beast::buffers_to_string(subRes.data());
-  subRes.consume(trans);
-  boost::json::object subResJson = boost::json::parse(subResString.c_str(), jsonEc).as_object();
-  if (jsonEc)
-  {
-    std::cerr << jsonEc.message() << std::endl;
-  }
+  // std::string subResString = beast::buffers_to_string(subRes.data());
+  // subRes.consume(trans);
+
+  // wsMutex.lock();
+  // printf("before packet\n");
+  // std::cout << subResString << std::endl;
+
+  // printf("before parse\n");
+  // wsMutex.unlock();
+  // boost::json::object subResJson = boost::json::parse(subResString.c_str(), jsonEc).as_object();
+  // if (jsonEc)
+  // {
+  //   std::cerr << jsonEc.message() << std::endl;
+  // }
+
+  // printf("after parse\n");
 
   // handleXStratumPacket(subResJson, isDev);
 
@@ -1510,11 +1519,13 @@ void spectre_stratum_session(
 
       if (trans > 0)
       {
+        boost::lock_guard<boost::mutex> lockGuard(wsMutex);
         std::vector<std::string> packets;
         std::string data = beast::buffers_to_string(response.data());
         // Consume the data from the buffer after processing it
         response.consume(trans);
-        deadline.cancel();
+
+        // std::cout << data << std::endl;
 
         std::stringstream  jsonStream(data);
 
@@ -1549,14 +1560,12 @@ void spectre_stratum_session(
               handleSpectreStratumResponse(sRPC, isDev);
             } 
           } catch(const std::exception &e){
-            mutex.lock();
             setcolor(RED);
             printf("BEFORE PACKET\n");
             std::cout << packet << std::endl;
             printf("AFTER PACKET\n");
             std::cerr << e.what() << std::endl;
             setcolor(BRIGHT_WHITE);
-            mutex.unlock();
           }
         }
       }
@@ -1565,17 +1574,16 @@ void spectre_stratum_session(
     {
       bool *C = isDev ? &devConnected : &isConnected;
       (*C) = false;
-      mutex.lock();
       setcolor(RED);
       std::cerr << e.what() << std::endl;
       setcolor(BRIGHT_WHITE);
-      mutex.unlock();
       return fail(ec, "Stratum session error");
     }
     boost::this_thread::sleep_for(boost::chrono::milliseconds(125));
   }
 
   // submission_thread.interrupt();
+  printf("\n\n\nflagged connection loss\n");
   stream.close();
 }
 
@@ -1622,8 +1630,6 @@ int handleSpectreStratumPacket(boost::json::object packet, bool isDev)
   std::string M = packet.at("method").get_string().c_str();
   if (M.compare(SpectreStratum::s_notify) == 0)
   {
-    SpectreStratum::lastReceivedJobTime = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-
     json *J = isDev ? &devJob : &job;
     uint64_t *h = isDev ? &devHeight : &ourHeight;
 
@@ -1657,15 +1663,16 @@ int handleSpectreStratumPacket(boost::json::object packet, bool isDev)
       if (memcmp(oldTemplate, newTemplate, 32) == 0) return 0;
     }
 
-    mutex.lock();
     setcolor(CYAN);
     if (!isDev)
       printf("\nStratum: new job received\n");
     setcolor(BRIGHT_WHITE);
-    mutex.unlock();
+
+    SpectreStratum::lastReceivedJobTime = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+
 
     (*J)["template"] = std::string(newTemplate, SpectreX::INPUT_SIZE*2);
-    std::string testPrint = (*J)["template"].get<std::string>();
+    // std::string testPrint = (*J)["template"].get<std::string>();
 
     // byte testOut[160];
     // memcpy(testOut, testPrint.data(), 160);
@@ -1696,22 +1703,18 @@ int handleSpectreStratumPacket(boost::json::object packet, bool isDev)
     {
       if (!isDev)
       {
-        mutex.lock();
         setcolor(BRIGHT_YELLOW);
         printf("Mining at: %s to wallet %s\n", host.c_str(), wallet.c_str());
         setcolor(CYAN);
         printf("Dev fee: %.2f", devFee);
         std::cout << "%" << std::endl;
         setcolor(BRIGHT_WHITE);
-        mutex.unlock();
       }
       else
       {
-        mutex.lock();
         setcolor(CYAN);
         printf("Connected to dev node: %s\n", host.c_str());
         setcolor(BRIGHT_WHITE);
-        mutex.unlock();
       }
     }
 
@@ -1730,6 +1733,7 @@ int handleSpectreStratumPacket(boost::json::object packet, bool isDev)
   }
   else if (M.compare(SpectreStratum::s_setExtraNonce) == 0)
   {
+    // std::cout << boost::json::serialize(packet).c_str() << std::endl;
     // json *J = isDev ? &devJob : &job;
     // uint64_t *h = isDev ? &devHeight : &ourHeight;
 
@@ -1760,7 +1764,6 @@ int handleSpectreStratumPacket(boost::json::object packet, bool isDev)
         printf("DEV | ");
       }
 
-      mutex.lock();
       switch (lLevel)
       {
       case SpectreStratum::STRATUM_INFO:
@@ -1785,7 +1788,6 @@ int handleSpectreStratumPacket(boost::json::object packet, bool isDev)
       printf("%s\n", packet.at("params").as_array()[1].as_string().c_str());
 
       setcolor(BRIGHT_WHITE);
-      mutex.unlock();
 
       return res;
     }
@@ -1801,50 +1803,47 @@ int handleSpectreStratumResponse(boost::json::object packet, bool isDev)
 
   switch (id)
   {
-  case SpectreStratum::subscribeID:
-  {
-    if (packet["error"].is_null()) return 0;
-    else {
-      const char *errorMsg = packet["error"].get_string().c_str();
-      mutex.lock();
-      setcolor(RED);
+    case SpectreStratum::subscribeID:
+    {
+      std::cout << boost::json::serialize(packet).c_str() << std::endl;
+      if (packet["error"].is_null()) return 0;
+      else {
+        const char *errorMsg = packet["error"].get_string().c_str();
+        setcolor(RED);
+        printf("\n");
+        if (isDev) {
+          setcolor(CYAN);
+          printf("DEV | ");
+        }
+        printf("Stratum ERROR: %s\n", errorMsg);
+        return -1;
+      }
+    }
+    break;
+    case SpectreStratum::submitID:
+    {
       printf("\n");
-      if (isDev) {
+      if (isDev)
+      {
         setcolor(CYAN);
         printf("DEV | ");
       }
-      printf("Stratum ERROR: %s\n", errorMsg);
-      mutex.unlock();
-      return -1;
+      if (!packet["result"].is_null() && packet.at("result").get_bool())
+      {
+        accepted++;
+        std::cout << "Stratum: share accepted" << std::endl;
+        setcolor(BRIGHT_WHITE);
+      }
+      else
+      {
+        rejected++;
+        if (!isDev)
+          setcolor(RED);
+        std::cout << "Stratum: share rejected: " << packet.at("error").get_array()[1].get_string() << std::endl;
+        setcolor(BRIGHT_WHITE);
+      }
+      break;
     }
-  }
-  break;
-  case SpectreStratum::submitID:
-  {
-    mutex.lock();
-    printf("\n");
-    if (isDev)
-    {
-      setcolor(CYAN);
-      printf("DEV | ");
-    }
-    if (!packet["result"].is_null() && packet.at("result").get_bool())
-    {
-      accepted++;
-      std::cout << "Stratum: share accepted" << std::endl;
-      setcolor(BRIGHT_WHITE);
-    }
-    else
-    {
-      rejected++;
-      if (!isDev)
-        setcolor(RED);
-      std::cout << "Stratum: share rejected: " << packet.at("error").get_array()[1].get_string() << std::endl;
-      setcolor(BRIGHT_WHITE);
-    }
-    mutex.unlock();
-    break;
-  }
   }
   return 0;
 }
@@ -2521,6 +2520,8 @@ startReporting:
 
       switch(miningAlgo) {
         case DERO_HASH:
+          dPrint = difficulty;
+          break;
         case XELIS_HASH:
           dPrint = difficulty;
           break;
@@ -3270,6 +3271,7 @@ waitForJob:
 
   while (!isConnected)
   {
+    printf("waiting for connection\n");
     boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
   }
 
@@ -3281,7 +3283,6 @@ waitForJob:
       json myJob = job;
       json myJobDev = devJob;
       localJobCounter = jobCounter;
-
       mutex.unlock();
 
       if (!myJob.contains("template"))
@@ -3338,6 +3339,7 @@ waitForJob:
       double DIFF = 1;
       Num cmpDiff;
 
+      // printf("end of job application\n");
       while (localJobCounter == jobCounter)
       {
         which = (double)(rand() % 10000);
@@ -3381,7 +3383,7 @@ waitForJob:
 
         if (submit && Num(hexStr(powHash, 32).c_str(), 16) <= cmpDiff)
         {
-
+          boost::lock_guard<boost::mutex> lockGuard(mutex);
           // if (littleEndian())
           // {
           //   std::reverse(powHash, powHash + 32);
@@ -3389,10 +3391,8 @@ waitForJob:
         //   std::string b64 = base64::to_base64(std::string((char *)&WORK[0], XELIS_TEMPLATE_SIZE));
           if (devMine)
           {
-            mutex.lock();
             if (localJobCounter != jobCounter || localDevHeight != devHeight)
             {
-              mutex.unlock();
               break;
             }
             setcolor(CYAN);
@@ -3415,14 +3415,11 @@ waitForJob:
               break;
             }
             submittingDev = true;
-            mutex.unlock();
           }
           else
           {
-            mutex.lock();
             if (localJobCounter != jobCounter || localOurHeight != ourHeight)
             {
-              mutex.unlock();
               break;
             }
             setcolor(BRIGHT_YELLOW);
@@ -3457,7 +3454,6 @@ waitForJob:
               break;
             }
             submitting = true;
-            mutex.unlock();
           }
         }
 
