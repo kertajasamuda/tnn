@@ -4127,6 +4127,7 @@ void AstroBWTv3(byte *input, int inputLen, byte *outputhash, workerData &worker,
   try
   {
     std::fill_n(worker.sData + 256, 64, 0);
+    memset(&worker.sData[256], 0, 64);
 
     __builtin_prefetch(&worker.sData[256], 1, 3);
     __builtin_prefetch(&worker.sData[256+64], 1, 3);
