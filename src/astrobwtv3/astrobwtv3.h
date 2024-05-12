@@ -213,12 +213,14 @@ public:
   int bA[256];
   int bB[256*256];
   int32_t sa[MAX_LENGTH];
-  
+
   std::vector<byte> opsA;
   std::vector<byte> opsB;
 
   friend std::ostream& operator<<(std::ostream& os, const workerData& wd);
 };
+
+inline void (*computeFunc)(workerData &worker, bool print);
 
 template <std::size_t N>
 inline void generateInitVector(std::uint8_t (&iv_buff)[N]);

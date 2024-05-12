@@ -2649,6 +2649,23 @@ Mining:
 
   winMask = std::max(1, winMask);
 
+  if (useLookupMine) {
+    // start = std::chrono::steady_clock::now();
+    computeFunc = &lookupCompute;
+    // end = std::chrono::steady_clock::now();
+  }
+  else {
+    // start = std::chrono::steady_clock::now();
+    #if defined(__AVX2__)
+    computeFunc = &branchComputeCPU_avx2;
+    #elif defined(__aarch64__)
+    computeFunc = &branchComputeCPU_aarch64;
+    #else
+    computeFunc = &branchComputeCPU;
+    #endif
+    // end = std::chrono::steady_clock::now();
+  }
+
   // Create worker threads and set CPU affinity
  //  mutex.lock();
   if (false /*gpuMine*/)

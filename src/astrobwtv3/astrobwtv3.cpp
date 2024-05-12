@@ -4164,6 +4164,8 @@ void AstroBWTv3(byte *input, int inputLen, byte *outputhash, workerData &worker,
     // auto start = std::chrono::steady_clock::now();
     // auto end = std::chrono::steady_clock::now();
 
+    computeFunc(worker, false);
+    /*
     if (lookupMine) {
       // start = std::chrono::steady_clock::now();
       lookupCompute(worker, false);
@@ -4180,6 +4182,7 @@ void AstroBWTv3(byte *input, int inputLen, byte *outputhash, workerData &worker,
       #endif
       // end = std::chrono::steady_clock::now();
     }
+    */
     
 
     // auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end-start);
