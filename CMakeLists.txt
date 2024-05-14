@@ -35,13 +35,13 @@ project(
   DESCRIPTION "Open Source Astrobwt Miner"
 )
 
-cmake_print_variables(GITLAB_CI)
+cmake_print_variables($ENV{GITLAB_CI})
 
 # This CMAKE variable isn't defined until 'project' is called.
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flax-vector-conversions -march=armv8-a")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flax-vector-conversions -march=armv8-a")
-elseif(GITLAB_CI MATCHES "true")
+elseif($ENV{GITLAB_CI} MATCHES "true")
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE}   -g ")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -march=${AMD64_TARGET_LEVEL} -m64")
 else()
