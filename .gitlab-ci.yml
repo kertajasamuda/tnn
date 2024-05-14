@@ -18,7 +18,7 @@ build:
   # instead of calling g++ directly you can also use some build toolkit like make
   # install the necessary build tools when needed
   before_script:
-    - apt update && apt -y install wget build-essential cmake clang libssl-dev libfmt-dev libc++-dev lld libboost1.83-all-dev git
+    - apt update && apt -y install wget build-essential cmake clang libssl-dev libfmt-dev libc++-dev lld git
   script:
     - mkdir ./build
     - cd ./build
