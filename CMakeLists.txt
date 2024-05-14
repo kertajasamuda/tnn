@@ -35,7 +35,7 @@ cmake_print_variables($ENV{GITLAB_CI})
 set(DO_STATIC " -static ")
 if(CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
   set(DO_STATIC " ")
-elif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flax-vector-conversions -march=armv8-a")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flax-vector-conversions -march=armv8-a")
 elseif($ENV{GITLAB_CI} MATCHES "true")
@@ -45,7 +45,7 @@ else()
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native -m64")
 endif()
 
-set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} ${DO_STATIC}")^M
+set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} ${DO_STATIC}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${DO_STATIC}")
 
 cmake_print_variables(CMAKE_C_FLAGS_RELEASE)
@@ -202,7 +202,7 @@ file(GLOB all_SRCS
 )
 
 # Remove aarch files from all_SRCS
-if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64" AND NOT CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
   list(FILTER all_SRCS EXCLUDE REGEX ".*/.*/*aarch64*")
 endif()
 
