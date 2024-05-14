@@ -11,6 +11,11 @@
 # can use versions as well, like gcc:5.2
 # see https://hub.docker.com/_/gcc/
 
+stages:
+  - build
+  - test
+  - release
+
 image: ubuntu:noble
 
 build:
@@ -18,7 +23,7 @@ build:
   # instead of calling g++ directly you can also use some build toolkit like make
   # install the necessary build tools when needed
   before_script:
-    - apt update && apt -y install wget build-essential cmake clang libssl-dev libfmt-dev libc++-dev lld git gdb
+    - apt update && apt -y install wget build-essential cmake clang libssl-dev libfmt-dev libc++-dev lld git
   script:
     - mkdir ./build
     - cd ./build
@@ -35,11 +40,19 @@ build:
 # run tests using the binary built before
 test:
   stage: test
+  before_script:
+    - apt update && apt -y install gdb
   script:
     - cd ./build
     - gdb -ex "run --dero-test" ./Tnn-miner
 
-deploy:
-  stage: deploy
-  script: echo "Define your deployment script!"
-  environment: production
+release_job:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG                 # Run this job when a tag is created
+  script:
+    - echo "running release_job"
+  release:                               # See https://docs.gitlab.com/ee/ci/yaml/#release for available properties
+    tag_name: '$CI_COMMIT_TAG'
+    description: '$CI_COMMIT_TAG'
