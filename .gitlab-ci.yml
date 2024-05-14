@@ -18,7 +18,7 @@ build:
   # instead of calling g++ directly you can also use some build toolkit like make
   # install the necessary build tools when needed
   before_script:
-    - apt update && apt -y install wget build-essential cmake clang libssl-dev libfmt-dev libc++-dev lld git
+    - apt update && apt -y install wget build-essential cmake clang libssl-dev libfmt-dev libc++-dev lld git gdb
   script:
     - mkdir ./build
     - cd ./build
@@ -37,7 +37,7 @@ test:
   stage: test
   script:
     - cd ./build
-    - ./Tnn-miner --dero-test
+    - gdb -ex "run --dero-test" ./Tnn-miner
 
 deploy:
   stage: deploy
