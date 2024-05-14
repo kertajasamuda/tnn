@@ -2,17 +2,11 @@
 cmake_minimum_required(VERSION 3.16.3)
 
 include(CMakePrintHelpers)
-
-#project(
-	#  Tnn-miner
-  #  VERSION 0.3.2
-  #  DESCRIPTION "Open Source Astrobwt Miner"
-  #)
-
+cmake_print_variables(CMAKE_HOST_SYSTEM_NAME)
 
 set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE}   -static -O3 -fPIE -DNDEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -static -O3 -pthread -Wuninitialized -DNDEBUG")
+set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE}   -O3 -fPIE -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -pthread -Wuninitialized -DNDEBUG")
 
 if(USE_GCC)
   set(CMAKE_C_COMPILER gcc)
@@ -24,7 +18,7 @@ else()
   set(CMAKE_C_COMPILER clang)
   set(CMAKE_CXX_COMPILER clang++)
   #set(CMAKE_CXX_COMPILER "/usr/bin/clang++" CACHE STRING "C++ compiler" FORCE)
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=ld")
   set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-deprecated")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated")
 endif()
@@ -38,7 +32,10 @@ project(
 cmake_print_variables($ENV{GITLAB_CI})
 
 # This CMAKE variable isn't defined until 'project' is called.
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+set(DO_STATIC " -static ")
+if(CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
+  set(DO_STATIC " ")
+elif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flax-vector-conversions -march=armv8-a")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flax-vector-conversions -march=armv8-a")
 elseif($ENV{GITLAB_CI} MATCHES "true")
@@ -47,6 +44,9 @@ elseif($ENV{GITLAB_CI} MATCHES "true")
 else()
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native -m64")
 endif()
+
+set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} ${DO_STATIC}")^M
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${DO_STATIC}")
 
 cmake_print_variables(CMAKE_C_FLAGS_RELEASE)
 cmake_print_variables(CMAKE_CXX_FLAGS_RELEASE)

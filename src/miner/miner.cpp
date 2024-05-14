@@ -2414,7 +2414,7 @@ Mining:
 }
 }
 
-void logSeconds(std::chrono::_V2::steady_clock::time_point start_time, int duration, bool *stop)
+void logSeconds(std::chrono::steady_clock::time_point start_time, int duration, bool *stop)
 {
   int i = 0;
   while (!(*stop))
@@ -2435,7 +2435,7 @@ void logSeconds(std::chrono::_V2::steady_clock::time_point start_time, int durat
   }
 }
 
-void update(std::chrono::_V2::steady_clock::time_point start_time)
+void update(std::chrono::steady_clock::time_point start_time)
 {
   auto beginning = start_time;
   boost::this_thread::yield();
@@ -2568,7 +2568,7 @@ void setAffinity(boost::thread::native_handle_type t, int core)
     std::cerr << "Failed to set CPU affinity for thread. Error code: " << error << std::endl;
   }
 
-#else
+#elif !defined(__APPLE__)
   // Get the native handle of the thread
   pthread_t threadHandle = t;
 
