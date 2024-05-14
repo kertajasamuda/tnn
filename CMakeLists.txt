@@ -35,7 +35,7 @@ project(
   DESCRIPTION "Open Source Astrobwt Miner"
 )
 
-cmake_print_properties(GITLAB_CI)
+cmake_print_variables(GITLAB_CI)
 
 # This CMAKE variable isn't defined until 'project' is called.
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
@@ -48,8 +48,8 @@ else()
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native -m64")
 endif()
 
-cmake_print_properties(CMAKE_C_FLAGS_RELEASE)
-cmake_print_properties(CMAKE_CXX_FLAGS_RELEASE)
+cmake_print_variables(CMAKE_C_FLAGS_RELEASE)
+cmake_print_variables(CMAKE_CXX_FLAGS_RELEASE)
 
 # if(WIN32)
 # set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
