@@ -44,7 +44,7 @@ test:
     - apt update && apt -y install gdb
   script:
     - cd ./build
-    - gdb -ex "run --dero-test" ./Tnn-miner
+    - gdb --batch -ex "run" -ex "bt" --args ./Tnn-miner --dero-test
 
 release_job:
   stage: release
