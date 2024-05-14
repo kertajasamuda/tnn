@@ -76,6 +76,7 @@ if(WIN32)
   link_directories(
     "C:/mingw64/lib"
   )
+  set(OPENSSL_ROOT_DIR "C:/mingw64/")
 endif()
 
 # This stores downloaded dependencies so we do not need to re-download them
