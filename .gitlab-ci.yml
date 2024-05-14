@@ -17,7 +17,7 @@ stages:
   - release
 
 variables:
-  AMD64_TARGET_LEVEL=x86-64-v3
+  AMD64_TARGET_LEVEL: x86-64-v3
 
 image: ubuntu:noble
 
