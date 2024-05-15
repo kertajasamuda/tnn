@@ -22,7 +22,7 @@ variables:
   PACKAGE_VERSION: "0.3.4"
   # DARWIN_AMD64_BINARY: "myawesomerelease-darwin-amd64-${PACKAGE_VERSION}"
   LINUX_AMD64_BINARY: "Tnn-miner-amd64.tar.gz"
-  PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/${CI_COMMIT_TAG}"
+  PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_COMMIT_TAG}"
 
 image: ubuntu:noble
 
