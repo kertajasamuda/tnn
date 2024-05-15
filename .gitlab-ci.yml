@@ -17,7 +17,8 @@
   image: macos-13-xcode-14
   before_script:
     - echo "started by ${GITLAB_USER_NAME} / @${GITLAB_USER_LOGIN}"
-    - brew install clang
+    - which clang
+    #- brew install clang
     - brew install fmt
     - brew install cmake
 
