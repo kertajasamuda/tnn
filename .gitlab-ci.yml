@@ -32,6 +32,7 @@ build:
     - cd ./build
     - cmake ..
     - make -j$(nproc)
+    - cd ../
     - mv ./build/Tnn-miner ./Tnn-miner
     - tar -czvf Tnn-miner-amd64.tar.gz ./Tnn-miner
   artifacts:
