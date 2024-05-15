@@ -14,15 +14,16 @@
 stages:
   - build
   - test
-  - upload
+  #- upload
   - release
 
 variables:
   AMD64_TARGET_LEVEL: x86-64-v3
-  PACKAGE_VERSION: "0.3.4"
+  #PACKAGE_VERSION: "0.3.4"
   # DARWIN_AMD64_BINARY: "myawesomerelease-darwin-amd64-${PACKAGE_VERSION}"
-  LINUX_AMD64_BINARY: "Tnn-miner-amd64.tar.gz"
-  PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_COMMIT_TAG}"
+  LINUX_AMD64_TGZ: "Tnn-miner-amd64.tar.gz"
+  MACOS_ARM64_TGZ: "Tnn-miner-macos-arm64.tar.gz"
+  #PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_COMMIT_TAG}"
 
 image: ubuntu:noble
 
@@ -40,19 +41,42 @@ build:
     - make -j$(nproc)
     - cd ../
     - mv ./build/Tnn-miner ./Tnn-miner
-    - tar -czvf Tnn-miner-amd64.tar.gz ./Tnn-miner
+    - tar -czvf ${LINUX_AMD64_TGZ} ./Tnn-miner
   after_script:
     - echo "BUILD_JOB_ID=$CI_JOB_ID" >> job.env
   artifacts:
+    name: ${LINUX_AMD64_TGZ}
     paths:
-      - ./Tnn-miner
-      - ./Tnn-miner-amd64.tar.gz
+      - ./${LINUX_AMD64_TGZ}
       # depending on your build setup it's most likely a good idea to cache outputs to reduce the build time
       # cache:
       #   paths:
       #     - "*.o"
     reports:
       dotenv: job.env
+
+build-macos:
+  image: macos-13-xcode-14
+  stage: build
+  # instead of calling g++ directly you can also use some build toolkit like make
+  # install the necessary build tools when needed
+  before_script:
+    - brew install clang
+    - brew install fmt
+    - brew install cmake
+  script:
+    - export
+    - mkdir ./build
+    - cd ./build
+    - cmake ..
+    - make -j$(nproc)
+    - cd ../
+    - mv ./build/Tnn-miner ./Tnn-miner
+    - tar -czvf ${MACOS_ARM64_TGZ} ./Tnn-miner
+  artifacts:
+    name: ${MACOS_ARM64_TGZ}
+    paths:
+      - ./${MACOS_ARM64_TGZ}
 
 # run tests using the binary built before
 test:
@@ -62,19 +86,19 @@ test:
   script:
     - gdb --batch -ex "run" -ex "bt" --args ./Tnn-miner --dero-test
 
-upload:
-  stage: upload
-  image: curlimages/curl:latest
-  rules:
-    - if: $CI_COMMIT_TAG
-  script:
-    - ls -la
-    #- |
-    #  curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file bin/${DARWIN_AMD64_BINARY} "${PACKAGE_REGISTRY_URL}/${DARWIN_AMD64_BINARY}"
-    - |
-      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file ${LINUX_AMD64_BINARY} "${PACKAGE_REGISTRY_URL}/${LINUX_AMD64_BINARY}"
-  dependencies:
-    - "build"
+#upload:
+#  stage: upload
+#  image: curlimages/curl:latest
+#  rules:
+#    - if: $CI_COMMIT_TAG
+#  script:
+#    - ls -la
+#    #- |
+#    #  curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file bin/${DARWIN_AMD64_BINARY} "${PACKAGE_REGISTRY_URL}/${DARWIN_AMD64_BINARY}"
+#    - |
+#      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file ${LINUX_AMD64_BINARY} "${PACKAGE_REGISTRY_URL}/${LINUX_AMD64_BINARY}"
+#  dependencies:
+#    - "build"
 
 # https://stackoverflow.com/a/67583488
 release_job:
@@ -82,6 +106,8 @@ release_job:
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   needs:
     - job: build
+      artifacts: true
+    - job: build-macos
       artifacts: true
   rules:
     - if: $CI_COMMIT_TAG                 # Run this job when a tag is created
@@ -98,5 +124,7 @@ release_job:
     description: 'Release $CI_COMMIT_TAG'
     assets:
       links:
-        - name: "${LINUX_AMD64_BINARY}"
+        - name: "${LINUX_AMD64_TGZ}"
+          url: "https://gitlab.com/${CI_PROJECT_PATH}/-/jobs/${BUILD_JOB_ID}/artifacts/download"
+        - name: "${MACOS_ARM64_TGZ}"
           url: "https://gitlab.com/${CI_PROJECT_PATH}/-/jobs/${BUILD_JOB_ID}/artifacts/download"
