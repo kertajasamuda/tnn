@@ -27,6 +27,7 @@ project(
 )
 
 cmake_print_variables($ENV{GITLAB_CI})
+cmake_print_variables(CMAKE_SYSTEM_PROCESSOR)
 
 # This CMAKE variable isn't defined until 'project' is called.
 set(DO_STATIC " -static ")
