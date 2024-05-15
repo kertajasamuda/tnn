@@ -11,6 +11,16 @@
 # can use versions as well, like gcc:5.2
 # see https://hub.docker.com/_/gcc/
 
+.macos_saas_runners:
+  tags:
+    - saas-macos-medium-m1
+  image: macos-13-xcode-14
+  before_script:
+    - echo "started by ${GITLAB_USER_NAME} / @${GITLAB_USER_LOGIN}"
+    - brew install clang
+    - brew install fmt
+    - brew install cmake
+
 stages:
   - build
   - test
@@ -56,14 +66,15 @@ build:
       dotenv: job.env
 
 build-macos:
-  image: macos-13-xcode-14
+  extends:
+    - .macos_saas_runners
   stage: build
   # instead of calling g++ directly you can also use some build toolkit like make
   # install the necessary build tools when needed
-  before_script:
-    - brew install clang
-    - brew install fmt
-    - brew install cmake
+  #before_script:
+  #  - brew install clang
+  #  - brew install fmt
+  #  - brew install cmake
   script:
     - export
     - mkdir ./build
