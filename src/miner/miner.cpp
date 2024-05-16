@@ -71,6 +71,7 @@
 #if defined(_WIN32)
 #include <Windows.h>
 #else
+#include "cpp-dns.hpp"
 #include <sched.h>
 #define THREAD_PRIORITY_ABOVE_NORMAL -5
 #define THREAD_PRIORITY_HIGHEST -20
@@ -1347,6 +1348,64 @@ void spectre_stratum_session(
 
   net::ip::address ip_address;
 
+  // If the specified host/pool is not in IP address form, resolve to acquire the IP address
+#ifndef _WIN32
+  boost::asio::ip::address::from_string(host, ec);
+  if (ec)
+  {
+    // Using cpp-dns to circumvent the issues cause by combining static linking and getaddrinfo()
+    // A second io_context is used to enable std::promise
+    net::io_context ioc2;
+    std::string ip;
+    std::promise<void> p;
+
+    YukiWorkshop::DNSResolver d(ioc2);
+    d.resolve_a4(host, [&](int err, auto &addrs, auto &qname, auto &cname, uint ttl)
+                 {
+  if (!err) {
+      wsMutex.lock();
+      for (auto &it : addrs) {
+        addrCount++;
+        ip = it.to_string();
+      }
+      p.set_value();
+      wsMutex.unlock();
+  } else {
+    p.set_value();
+  } });
+    ioc2.run();
+
+    std::future<void> f = p.get_future();
+    f.get();
+
+    if (addrCount == 0)
+    {
+      wsMutex.lock();
+      setcolor(RED);
+      std::cerr << "ERROR: Could not resolve " << host << std::endl;
+      setcolor(BRIGHT_WHITE);
+      wsMutex.unlock();
+      return;
+    }
+
+    ip_address = net::ip::address::from_string(ip.c_str(), ec);
+  }
+  else
+  {
+    ip_address = net::ip::address::from_string(host, ec);
+  }
+
+  tcp::endpoint asdf(ip_address, (uint_least16_t)std::stoi(port.c_str()));
+  // Set a timeout on the operation
+  beast::get_lowest_layer(stream).expires_after(std::chrono::seconds(30));
+
+  // Make the connection on the IP address we get from a lookup
+  beast::get_lowest_layer(stream).async_connect(asdf, yield[ec]);
+  if (ec)
+    return fail(ec, "connect");
+#else
+
+
   // Look up the domain name
   tcp::resolver resolver(ioc);
   auto const results = resolver.async_resolve(host, port, yield[ec]);
@@ -1360,6 +1419,8 @@ void spectre_stratum_session(
   auto daemon = beast::get_lowest_layer(stream).async_connect(results, yield[ec]);
   if (ec)
     return fail(ec, "connect");
+
+#endif
 
   // // Set the SNI hostname
   // if (!SSL_set_tlsext_host_name(stream.native_handle(), host.c_str()))
