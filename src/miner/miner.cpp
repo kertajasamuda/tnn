@@ -1349,7 +1349,7 @@ void spectre_stratum_session(
   net::ip::address ip_address;
 
   // If the specified host/pool is not in IP address form, resolve to acquire the IP address
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__APPLE__)
   boost::asio::ip::address::from_string(host, ec);
   if (ec)
   {

@@ -16,6 +16,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#if !defined(_WIN32) && !defined(__APPLE__)
+
 #pragma once
 
 #include <stdexcept>
@@ -118,3 +120,5 @@ namespace YukiWorkshop {
 
 	};
 }
+
+#endif
