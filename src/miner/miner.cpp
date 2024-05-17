@@ -169,7 +169,7 @@ void fail(beast::error_code ec, char const *what) noexcept
   wsMutex.unlock();
 }
 
-tcp::endpoint resolve_hosts(std::string host, std::string port) {
+tcp::endpoint resolve_host(net::io_context &ioc, net::yield_context yield, std::string host, std::string port) {
   beast::error_code ec;
 
   int addrCount = 0;
@@ -250,7 +250,7 @@ void dero_session(
   beast::error_code ec;
 
   websocket::stream<beast::ssl_stream<beast::tcp_stream>> ws(ioc, ctx);
-  auto endpoint = resolve_hosts(host, port);
+  auto endpoint = resolve_host(ioc, yield, host, port);
 
   // Set a timeout on the operation
   beast::get_lowest_layer(ws).expires_after(std::chrono::seconds(30));
@@ -446,7 +446,7 @@ void xelis_session(
     bool isDev)
 {
   beast::error_code ec;
-  auto endpoint = resolve_hosts(host, port);
+  auto endpoint = resolve_host(ioc, yield, host, port);
   websocket::stream<beast::tcp_stream> ws(ioc);
 
   // Make the connection on the IP address we get from a lookup
@@ -658,7 +658,7 @@ void xatum_session(
   boost::beast::ssl_stream<boost::beast::tcp_stream> stream(ioc, ctx);
   boost::asio::deadline_timer deadline(ioc, boost::posix_time::seconds(1));
 
-  auto endpoint = resolve_hosts(host, port);
+  auto endpoint = resolve_host(ioc, yield, host, port);
   // Set a timeout on the operation
   beast::get_lowest_layer(stream).expires_after(std::chrono::seconds(30));
   // Make the connection on the IP address we get from a lookup
@@ -950,7 +950,7 @@ void xelis_stratum_session(
   boost::system::error_code jsonEc;
   boost::asio::deadline_timer deadline(ioc, boost::posix_time::seconds(1));
 
-  auto endpoint = resolve_hosts(host, port);
+  auto endpoint = resolve_host(ioc, yield, host, port);
 
   // Create a TCP socket
   ctx.set_verify_mode(ssl::verify_none); // Accept self-signed certificates
@@ -1352,7 +1352,7 @@ void spectre_stratum_session(
   boost::system::error_code jsonEc;
   boost::asio::deadline_timer deadline(ioc, boost::posix_time::seconds(1));
 
-  auto endpoint = resolve_hosts(host, port);
+  auto endpoint = resolve_host(ioc, yield, host, port);
   boost::beast::tcp_stream stream(ioc);
 
   // Set a timeout on the operation
