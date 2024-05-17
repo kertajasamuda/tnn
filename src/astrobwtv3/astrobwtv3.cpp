@@ -37,7 +37,6 @@
 #include <filesystem>
 #include <functional>
 #include "lookupcompute.h"
-#include "sais_lcp.hpp"
 
 extern "C"
 {
@@ -49,7 +48,6 @@ extern "C"
 
 #include <hex.h>
 #include <openssl/rc4.h>
-// #include "sais2.h"
 
 #include <fstream>
 
@@ -61,7 +59,6 @@ extern "C"
 #if defined(__x86_64__)
   #include "immintrin.h"
 #endif
-// #include "fgsaca.hpp"
 #include <hugepages.h>
 
 using byte = unsigned char;
