@@ -37,11 +37,7 @@
 #include <filesystem>
 #include <functional>
 #include "lookupcompute.h"
-#include "archon3r3.h"
-// #include "archon4r0.h"
-#include "archon.h"
 #include "sais_lcp.hpp"
-#include "dc3.hpp"
 
 extern "C"
 {
@@ -65,7 +61,6 @@ extern "C"
 #if defined(__x86_64__)
   #include "immintrin.h"
 #endif
-#include "dc3.hpp"
 // #include "fgsaca.hpp"
 #include <hugepages.h>
 
