@@ -28,6 +28,82 @@ void testPopcnt256_epi8() {
 }
 #endif
 
+void runDivsufsortBenchmark() {
+  std::vector<std::string> snapshotFiles;
+  for (const auto& entry : std::filesystem::directory_iterator("tests")) {
+    snapshotFiles.push_back(entry.path().string());
+  }
+  
+  std::vector<std::chrono::duration<double>> times;
+  std::vector<std::chrono::duration<double>> times2;
+  
+  int32_t *sa = reinterpret_cast<int32_t *>(malloc_huge_pages(MAX_LENGTH*sizeof(int32_t)));
+  byte *buffer = reinterpret_cast<byte *>(malloc_huge_pages(MAX_LENGTH));
+  int32_t *bA = reinterpret_cast<int32_t *>(malloc_huge_pages((256)*sizeof(int32_t)));;
+  int32_t *bB = reinterpret_cast<int32_t *>(malloc_huge_pages((256*256)*sizeof(int32_t)));
+
+  workerData *worker = new workerData;
+
+  std::cout << "Testing divsufsort" << std::endl;
+  for (const auto& file : snapshotFiles) {
+    // Load snapshot data from file
+    std::ifstream ifs(file, std::ios::binary);
+    ifs.seekg(0, ifs.end);
+    size_t size = ifs.tellg(); 
+    ifs.seekg(0, ifs.beg);
+    ifs.read(reinterpret_cast<char*>(buffer), size);
+    ifs.close();
+    
+    // Run divsufsort
+    auto start = std::chrono::steady_clock::now();
+    divsufsort(buffer, sa, size, bA, bB); 
+    auto end = std::chrono::steady_clock::now();
+    
+    std::chrono::duration<double> time = end - start;
+    times.push_back(time);
+  }
+
+  memset(sa, 0, MAX_LENGTH);
+
+  std::cout << "Testing stampsufsort" << std::endl;
+  for (const auto& file : snapshotFiles) {
+    // Load snapshot data from file
+    std::ifstream ifs(file, std::ios::binary);
+    ifs.seekg(0, ifs.end);
+    size_t size = ifs.tellg(); 
+    ifs.seekg(0, ifs.beg);
+    ifs.read(reinterpret_cast<char*>(buffer), size);
+    ifs.close();
+    
+    // FIXME: Run stampsufsort
+    auto start = std::chrono::steady_clock::now();
+    divsufsort(buffer, sa, size, bA, bB); 
+    auto end = std::chrono::steady_clock::now();
+    
+    std::chrono::duration<double> time = end - start;
+    times2.push_back(time);
+  }
+
+
+  double divsufsortAverage = 0.0;
+  double stampsufsortAverage = 0.0;
+
+  for (const auto& time : times) {
+    divsufsortAverage += time.count();
+  }
+  for (const auto& time : times2) {
+    stampsufsortAverage += time.count(); 
+  }
+
+  std::cout << "Total divsufsort time:   " << std::setprecision(5) << divsufsortAverage << " seconds" << std::endl;
+  std::cout << "Total stampsufsort time: " << std::setprecision(5) << stampsufsortAverage << " seconds" << std::endl;
+
+  divsufsortAverage /= times.size();
+  stampsufsortAverage /= times2.size();
+
+  std::cout << "Average divsufsort time:   " << divsufsortAverage << " seconds" << std::endl;
+  std::cout << "Average stampsufsort time: " << stampsufsortAverage << " seconds" << std::endl;
+}
 
 int DeroTesting(int testOp, int testLen, bool useLookup) {
   int failedTests = 0;
