@@ -160,6 +160,8 @@ int DeroTesting(int testOp, int testLen, bool useLookup) {
 
 const uint64_t NUM_ITERATIONS = 1000;
 
+
+#if defined(__AVX2__)
 #pragma clang optimize off
 void benchmarkSIMDMath() {
     alignas(32) uint8_t prev_chunk[32] = {0};
@@ -250,12 +252,16 @@ void benchmarkLoadCompare() {
     std::cout << "Load, Compare, Broadcast, Store: " << duration.count() << " nanoseconds" << std::endl;
     std::cout << "Accumulator: " << accumulator << std::endl;
 }
+#endif
+
 #pragma clang optimize on
 
 int runDeroOpTests(int testOp, int dataLen) {
 
+#if defined(__AVX2__)
   benchmarkSIMDMath();
   benchmarkLoadCompare();
+#endif
 
   bool useLookup = false;
   int numOpsFailed = 0;
