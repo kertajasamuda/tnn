@@ -61,8 +61,14 @@ inline void generateRandomBytes(std::uint8_t (&iv_buff)[N])
 
 void runDivsufsortBenchmark();
 
+void mapZeroes();
+
 int DeroTesting(int testOp, int testLen, bool useLookup);
 int runDeroOpTests(int testOp, int dataLen=15);
+int rakeDeroOpTests(int testOp, int dataLen=15);
+
+void benchmarkSIMDMath();
+void benchmarkLoadCompare();
 
 int TestAstroBWTv3(bool useLookup);
 int TestAstroBWTv3repeattest(bool useLookup);

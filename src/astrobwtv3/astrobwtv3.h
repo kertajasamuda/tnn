@@ -17,6 +17,8 @@
 #include <openssl/sha.h>
 #include <openssl/rc4.h>
 
+#include <bitset>
+
 #ifdef _WIN32
 #include <winsock2.h>
 #include <intrin.h>
@@ -70,6 +72,8 @@ const int AMASK	= (1<<ABIT)-1;
 #if defined(__AVX2__)
 alignas(32) inline __m256i g_maskTable[32];
 #endif
+
+#define rl8(x, y) ((x << (y%8) | x >> (8-(y%8))))
 
 const int MINIBLOCK_SIZE = 48;
 
@@ -162,17 +166,20 @@ public:
 
   int lucky = 0;
 
-  byte lookup3D[branchedOps_size*256*256];
-  uint16_t lookup2D[regOps_size*(256*256)];
-
   SHA256_CTX sha256;
   ucstk::Salsa20 salsa20;
   RC4_KEY key;
 
   void *ctx;
 
-  byte salsaInput[256] = {0};
-  byte op;
+  // std::vector<std::tuple<int,int,int>> repeats;
+
+  alignas(32) byte salsaInput[256] = {0};
+  alignas(32) byte op;
+  #if defined(__AVX2__)
+  __m256i data;
+  __m256i old;
+  #endif
   byte pos1;
   byte pos2;
   byte t1;
@@ -184,35 +191,38 @@ public:
   byte *chunk;
   byte *prev_chunk;
 
-  byte sHash[32];
-  byte sha_key[32];
-  byte sha_key2[32];
-  byte sData[MAX_LENGTH+64];
-  byte chunkCache[256];
+  alignas(32) byte simpleLookup[regOps_size*(256*256)];
+  alignas(32) byte lookup3D[branchedOps_size*256*256];
+  alignas(32) uint16_t lookup2D[regOps_size*(256*256)];
 
-  #if defined(__AVX2__)
-  alignas(32) __m256i maskTable[32];
-  __m256i simd_data;
-  __m256i simd_old;
-  #endif
+  bool isSame = false;
+
+  alignas(32) byte sHash[32];
+  alignas(32) byte sha_key[32];
+  alignas(32) byte sha_key2[32];
+  alignas(32) byte sData[MAX_LENGTH+64];
+  alignas(32) byte chunkCache[256];
+
+  alignas(32) std::bitset<256> clippedBytes[regOps_size];
+  alignas(32) std::bitset<256> unchangedBytes[regOps_size];
 
   byte branchedOps[branchedOps_size*2];
   byte regularOps[regOps_size*2];
 
-  byte branched_idx[256];
-  byte reg_idx[256];
+  alignas(32) byte branched_idx[256];
+  alignas(32) byte reg_idx[256];
 
-  uint64_t random_switcher;
+  alignas(32) uint64_t random_switcher;
 
-  uint64_t lhash;
-  uint64_t prev_lhash;
-  uint64_t tries;
+  alignas(32) uint64_t lhash;
+  alignas(32) uint64_t prev_lhash;
+  alignas(32) uint64_t tries;
 
-  byte counter[64];
+  alignas(32) byte counter[64];
 
-  int bA[256];
-  int bB[256*256];
-  int32_t sa[MAX_LENGTH];
+  alignas(32) int bA[256];
+  alignas(32) int bB[256*256];
+  alignas(32) int32_t sa[MAX_LENGTH];
   
   std::vector<byte> opsA;
   std::vector<byte> opsB;
@@ -652,40 +662,6 @@ inline void prefetch(T *data, int size, int hint) {
   }
 }
 
-inline void hashSHA256(SHA256_CTX &sha256, const byte *input, byte *digest, unsigned long inputSize)
-{
-  SHA256_Init(&sha256);
-  SHA256_Update(&sha256, input, inputSize);
-  SHA256_Final(digest, &sha256);
-}
-
-inline std::vector<uint8_t> padSHA256Input(const uint8_t* input, size_t length) {
-    // Calculate the length of the padded message
-    size_t paddedLength = length + 1; // Original length plus the 0x80 byte
-    size_t mod = paddedLength % 64;
-    if (mod > 56) {
-        paddedLength += 64 + 56 - mod; // Pad so there's room for the length
-    } else {
-        paddedLength += 56 - mod; // Pad so there's room for the length
-    }
-    paddedLength += 8; // Add 8 bytes for the original length
-
-    // Create the padded message
-    std::vector<uint8_t> padded(paddedLength, 0);
-    memcpy(padded.data(), input, length);
-
-    // Append the '1' bit
-    padded[length] = 0x80;
-
-    // Append the original length in bits as a 64-bit big-endian integer
-    uint64_t bitLength = static_cast<uint64_t>(length) * 8; // Convert length to bits
-    for (size_t i = 0; i < 8; ++i) {
-        padded[paddedLength - 1 - i] = static_cast<uint8_t>((bitLength >> (8 * i)) & 0xff);
-    }
-
-    return padded;
-}
-
 template <typename T>
 inline void insertElement(T* arr, int& size, int capacity, int index, const T& element) {
     if (size < capacity) {
@@ -712,6 +688,7 @@ void branchComputeCPU(workerData &worker, bool isTest);
 
 #if defined(__AVX2__)
 void branchComputeCPU_avx2(workerData &worker, bool isTest);
+void branchComputeCPU_avx2_zOptimized(workerData &worker, bool isTest);
 #endif
 
 void AstroBWTv3(byte *input, int inputLen, byte *outputhash, workerData &scratch, bool lookupMine);
