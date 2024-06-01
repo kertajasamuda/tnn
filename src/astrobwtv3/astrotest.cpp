@@ -1,4 +1,5 @@
 #include <astrotest.hpp>
+#include <fstream>
 
 #if defined(__AVX2__)
 void testPopcnt256_epi8() {
@@ -28,6 +29,42 @@ void testPopcnt256_epi8() {
 }
 #endif
 
+void mapZeroes() {
+  std::vector<std::tuple<int,int,int>> opMap; 
+  std::vector<std::tuple<int,int,int>> noChange; 
+
+  for (int o = 0; o < 256; o++) {
+    for (int i = 0; i < 256; i++) {
+      for (int j = 0; j < 256; j++) {
+        byte r = i;
+        branchResult(r, o, j);
+        if (std::find(branchedOps_global.begin(), branchedOps_global.end(), i) == branchedOps_global.end()) {
+          if (r == 0) opMap.push_back(std::tuple<int,int,int>(o,i,j));
+          if (r == i) noChange.push_back(std::tuple<int,int,int>(o,i,j));
+          break;
+        }
+      }
+    }
+  }
+
+  std::ofstream outputFile("unchangedOps.txt");
+  if (outputFile.is_open()) {
+    for (const auto& [op, input, salt] : noChange) {
+      outputFile << "op: " << op << ", input: " << input << ", salt: " << salt << std::endl;
+    }
+  }
+  outputFile.close();
+  std::cout << "Output written to unchangedOps.txt" << std::endl;
+
+  outputFile.open("clippedOps.txt");
+  if (outputFile.is_open()) {
+    for (const auto& [op, input, salt] : opMap) {
+      outputFile << "op: " << op << ", input: " << input << ", salt: " << salt << std::endl;
+    }
+  }
+  outputFile.close();
+  std::cout << "Output written to clippedOps.txt" << std::endl;
+}
 void runDivsufsortBenchmark() {
   std::vector<std::string> snapshotFiles;
   for (const auto& entry : std::filesystem::directory_iterator("tests")) {
@@ -121,7 +158,105 @@ int DeroTesting(int testOp, int testLen, bool useLookup) {
   return failedTests;
 }
 
+const uint64_t NUM_ITERATIONS = 1000;
+
+#pragma clang optimize off
+void benchmarkSIMDMath() {
+    alignas(32) uint8_t prev_chunk[32] = {0};
+    alignas(32) uint8_t chunk[32] = {0};
+    int pos1 = 0;
+    int pos2 = 16;
+
+    prev_chunk[pos2] = 29;
+
+    // Fill the first 15 bytes of prev_chunk with 0x00
+    for (int i = 0; i < pos2; ++i) {
+        prev_chunk[i] = 0;
+    }
+
+    // Fill the remaining bytes of prev_chunk with random values
+    srand(0);
+    for (int i = pos2 + 1; i < 32; ++i) {
+        prev_chunk[i] = static_cast<uint8_t>(rand());
+    }
+
+    uint64_t accumulator = 0;
+    auto start = std::chrono::steady_clock::now();
+
+    for (uint64_t i = 0; i < NUM_ITERATIONS; ++i) {
+        __m256i data = _mm256_loadu_si256((__m256i*)&prev_chunk[pos1]);
+        __m256i old = data;
+
+        data = _mm256_and_si256(data, _mm256_set1_epi8(prev_chunk[pos2]));
+        data = _mm256_xor_si256(data, _mm256_set1_epi8(prev_chunk[pos2]));
+        data = _mm256_xor_si256(data, popcnt256_epi8(data));
+        data = _mm256_sllv_epi8(data, _mm256_and_si256(data, _mm256_set1_epi8(3)));
+
+        data = _mm256_blendv_epi8(old, data, genMask(pos2 - pos1));
+        _mm256_storeu_si256((__m256i*)&chunk[pos1], data);
+
+        accumulator += chunk[pos1];
+    }
+
+    auto end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+
+    std::cout << "SIMD Math Operations: " << duration.count() << " nanoseconds" << std::endl;
+    std::cout << "Accumulator: " << accumulator << std::endl;
+}
+
+void benchmarkLoadCompare() {
+    alignas(32) uint8_t prev_chunk[32] = {0};
+    alignas(32) uint8_t chunk[32] = {0};
+    int pos1 = 0;
+    int pos2 = 16;
+
+    workerData *controlWorker = (workerData*)malloc_huge_pages(sizeof(workerData));
+    initWorker(*controlWorker);
+    lookupGen(*controlWorker, nullptr, nullptr);
+
+    prev_chunk[pos2] = 29;
+
+    // Fill the first 15 bytes of prev_chunk with 0x00
+    for (int i = 0; i < pos2; ++i) {
+        prev_chunk[i] = 0;
+    }
+
+    // Fill the remaining bytes of prev_chunk with random values
+    srand(0);
+    for (int i = pos2 + 1; i < 32; ++i) {
+        prev_chunk[i] = static_cast<uint8_t>(rand());
+    }
+
+    uint64_t accumulator = 0;
+    auto start = std::chrono::steady_clock::now();
+
+    for (uint64_t i = 0; i < NUM_ITERATIONS; ++i) {
+
+        __m256i data = _mm256_loadu_si256((__m256i*)&prev_chunk[pos1]);
+        // if ((result & mask) == mask) {
+          byte newVal = controlWorker->lookup3D[controlWorker->branched_idx[116]*256*256 + prev_chunk[pos2]*256 + prev_chunk[pos1]];
+
+          __m256i newVec = _mm256_set1_epi8(newVal);
+          data = _mm256_blendv_epi8(data, newVec, genMask(pos2-pos1));
+          _mm256_storeu_si256((__m256i*)&chunk[pos1], data);
+          accumulator += chunk[pos1];
+        // } 
+    }
+
+    auto end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+
+    std::cout << "Load, Compare, Broadcast, Store: " << duration.count() << " nanoseconds" << std::endl;
+    std::cout << "Accumulator: " << accumulator << std::endl;
+}
+#pragma clang optimize on
+
 int runDeroOpTests(int testOp, int dataLen) {
+
+  benchmarkSIMDMath();
+  benchmarkLoadCompare();
+
   bool useLookup = false;
   int numOpsFailed = 0;
   #if defined(__AVX2__)
@@ -136,16 +271,24 @@ int runDeroOpTests(int testOp, int dataLen) {
   initWorker(*testWorker);
   lookupGen(*testWorker, nullptr, nullptr);
 
-  controlWorker->pos1 = 0; controlWorker->pos2 = dataLen;
-  testWorker->pos1 = 0; testWorker->pos2 = dataLen;
+  workerData *z_testWorker = (workerData*)malloc_huge_pages(sizeof(workerData));
+  initWorker(*z_testWorker);
+  lookupGen(*z_testWorker, nullptr, nullptr);
+
+  controlWorker->pos1 = 0; controlWorker->pos2 = dataLen+1;
+  testWorker->pos1 = 0; testWorker->pos2 = dataLen+1;
+  z_testWorker->pos1 = 0; z_testWorker->pos2 = dataLen+1;
+
+  z_testWorker->isSame = true;
 
   byte test[32];
   //byte test2[32];
   std::srand(time(NULL));
   generateInitVector<32>(test);
-
+  memset(test, 0, dataLen);
+  
   printf("Initial Input\n");
-  for (int i = 0; i < dataLen; i++) {
+  for (int i = 0; i < 32; i++) {
     printf("%02x", test[i]);
   }
   printf("\n");
@@ -176,52 +319,190 @@ int runDeroOpTests(int testOp, int dataLen) {
     startOp = testOp;
     maxOp = testOp;
   }
-
-  printf("%-7s:   Branch vs %-7s ns         - Valid\n", resultText.c_str(), resultText.c_str());
+                                            //
+  printf("%-7s:   Branch vs %-7s ns         - Valid| Branch vs %-7s ns        - Valid\n", resultText.c_str(), resultText.c_str(), "AVX2_zOp");
   for(int op = startOp; op <= maxOp; op++) {
     // WARMUP, don't print times
     OpTestResult *controlResult = new OpTestResult;
     OpTestResult *testResult = new OpTestResult;
+    OpTestResult *z_testResult = new OpTestResult;
     // WARMUP, don't print times
 
-    controlWorker->pos1 = 0; controlWorker->pos2 = 16;
+    controlWorker->pos1 = 0; controlWorker->pos2 = dataLen+1;
     //memset(&controlWorker->step_3, 0, 256);
     //memcpy(&controlWorker->step_3, test, dataLen);
     optest_branchcpu(0, *controlWorker, test, *controlResult, false);
 
-    controlWorker->pos1 = 0; controlWorker->pos2 = 16;    
+    controlWorker->pos1 = 0; controlWorker->pos2 = dataLen+1;    
     //memset(&controlWorker->step_3, 0, 256);
     //memcpy(&controlWorker->step_3, test, dataLen);
     optest_branchcpu(op, *controlWorker, test, *controlResult, false);
     //printf("  Op: %3d - %6ld ns\n", op, controlResult->duration_ns);
 
-    testWorker->pos1 = 0; testWorker->pos2 = 16;
+    z_testWorker->pos1 = 0; z_testWorker->pos2 = dataLen+1;
+    testFunc(op, *z_testWorker, test, *z_testResult, false);
+
+    z_testWorker->pos1 = 0; z_testWorker->pos2 = dataLen+1;
+    testFunc(op, *z_testWorker, test, *z_testResult, false);
+
+    testWorker->pos1 = 0; testWorker->pos2 = dataLen+1;
+    testFunc(op, *testWorker, test, *testResult, false);
+
+    testWorker->pos1 = 0; testWorker->pos2 = dataLen+1;
     testFunc(op, *testWorker, test, *testResult, false);
 
     auto control_dur = controlResult->duration_ns.count();
     auto test_dur = testResult->duration_ns.count();
+    auto z_test_dur = z_testResult->duration_ns.count();
 
     auto percent_speedup = double(double(control_dur-test_dur)/double(test_dur))*100;
+    auto z_percent_speedup = double(double(control_dur-z_test_dur)/double(z_test_dur))*100;
     bool valid = 0 == memcmp(controlResult->result, testResult->result, dataLen);
+    bool z_valid = 0 == memcmp(controlResult->result, z_testResult->result, dataLen);
     char isOpt = ' ';
     if(testWorker->opt[op]) {
       isOpt = '*';
     }
-    printf("%cOp: %3d - %7ld / %7ld = %6.2f %% - %s\n", isOpt, op, controlResult->duration_ns.count(), testResult->duration_ns.count(), percent_speedup, valid ? "true" : "false");
+    printf("%cOp: %3d - %7ld / %7ld = %6.2f %% - %s | %7ld / %7ld = %6.2f %% - %s\n", isOpt, op, controlResult->duration_ns.count(), testResult->duration_ns.count(), 
+      percent_speedup, valid ? "true" : "false", controlResult->duration_ns.count(), z_testResult->duration_ns.count(), z_percent_speedup, z_valid ? "true" : "false");
     if(!valid) {
       numOpsFailed++;
       printf("Vanilla: ");
-      for (int i = 0; i < dataLen; i++) {
+      for (int i = 0; i < dataLen+1; i++) {
         printf("%02x", controlResult->result[i]);
       }
       printf("\n");
       printf("%7s: ", resultText.c_str());
-      for (int i = 0; i < dataLen; i++) {
+      for (int i = 0; i < dataLen+1; i++) {
         printf("%02x", testResult->result[i]);
       }
       printf("\n");
     }
+
+    if(!z_valid) {
+      numOpsFailed++;
+      printf("Vanilla: ");
+      for (int i = 0; i < dataLen+1; i++) {
+        printf("%02x", controlResult->result[i]);
+      }
+      printf("\nZ optimized: ");
+      printf("%7s: ", resultText.c_str());
+      for (int i = 0; i < dataLen+1; i++) {
+        printf("%02x", z_testResult->result[i]);
+      }
+      printf("\n");
+    }
   }
+  return numOpsFailed;
+}
+
+int rakeDeroOpTests(int testOp, int dataLen) {
+  bool useLookup = false;
+  int numOpsFailed = 0;
+  #if defined(__AVX2__)
+  testPopcnt256_epi8();
+  #endif
+
+  workerData *controlWorker = (workerData*)malloc_huge_pages(sizeof(workerData));
+  initWorker(*controlWorker);
+  lookupGen(*controlWorker, nullptr, nullptr);
+
+  workerData *testWorker = (workerData*)malloc_huge_pages(sizeof(workerData));
+  initWorker(*testWorker);
+  lookupGen(*testWorker, nullptr, nullptr);
+
+  controlWorker->pos1 = 0; controlWorker->pos2 = dataLen+1;
+  testWorker->pos1 = 0; testWorker->pos2 = dataLen+1;
+
+  byte test[32];
+
+  for (int o = 0; o < 256; o++) {
+    //byte test2[32];
+    std::srand(time(NULL));
+    generateInitVector<32>(test);
+    memset(test, o, dataLen);
+
+    printf("Initial Input\n");
+    for (int i = 0; i < 32; i++) {
+      printf("%02x", test[i]);
+    }
+    printf("\n");
+
+    std::string resultText = std::string("Lookup");
+    void (*testFunc)(int op, workerData &worker, byte testData[32], OpTestResult &testRes, bool print);
+    // the ampersand is actually optional
+    testFunc = &optest_branchcpu;
+    if(useLookup) {
+      testFunc = &optest_lookup;
+    } else {
+      #if defined(__AVX2__)
+      resultText = "AVX2";
+      testFunc = &optest_avx2;
+      #elif defined(__x86_64__)
+      resultText = "Branch";
+      testFunc = &optest_branchcpu;
+      #endif
+      #if defined(__aarch64__)
+      resultText = "AA64";
+      testFunc = &optest_aarch64;
+      #endif
+    }
+
+    int startOp = 0;
+    int maxOp = 255;
+    if(testOp >= 0) {
+      startOp = testOp;
+      maxOp = testOp;
+    }
+
+    // printf("%-7s:   Branch vs %-7s ns         - Valid\n", resultText.c_str(), resultText.c_str());
+    for(int op = startOp; op <= maxOp; op++) {
+      // WARMUP, don't print times
+      OpTestResult *controlResult = new OpTestResult;
+      OpTestResult *testResult = new OpTestResult;
+      // WARMUP, don't print times
+
+      controlWorker->pos1 = 0; controlWorker->pos2 = dataLen;
+      //memset(&controlWorker->step_3, 0, 256);
+      //memcpy(&controlWorker->step_3, test, dataLen);
+      optest_branchcpu(0, *controlWorker, test, *controlResult, false);
+
+      controlWorker->pos1 = 0; controlWorker->pos2 = dataLen;    
+      //memset(&controlWorker->step_3, 0, 256);
+      //memcpy(&controlWorker->step_3, test, dataLen);
+      optest_branchcpu(op, *controlWorker, test, *controlResult, false);
+      //printf("  Op: %3d - %6ld ns\n", op, controlResult->duration_ns);
+
+      testWorker->pos1 = 0; testWorker->pos2 = dataLen;
+      testFunc(op, *testWorker, test, *testResult, false);
+
+      auto control_dur = controlResult->duration_ns.count();
+      auto test_dur = testResult->duration_ns.count();
+
+      auto percent_speedup = double(double(control_dur-test_dur)/double(test_dur))*100;
+      bool valid = 0 == memcmp(controlResult->result, testResult->result, dataLen);
+      char isOpt = ' ';
+      if(testWorker->opt[op]) {
+        isOpt = '*';
+      }
+      // printf("%cOp: %3d - %7ld / %7ld = %6.2f %% - %s\n", isOpt, op, controlResult->duration_ns.count(), testResult->duration_ns.count(), percent_speedup, valid ? "true" : "false");
+      if(!valid) {
+        printf("input: %d, op: %d\n", o, op);
+        numOpsFailed++;
+        printf("Vanilla: ");
+        for (int i = 0; i < dataLen+1; i++) {
+          printf("%02x", controlResult->result[i]);
+        }
+        printf("\n");
+        printf("%7s: ", resultText.c_str());
+        for (int i = 0; i < dataLen+1; i++) {
+          printf("%02x", testResult->result[i]);
+        }
+        printf("\n");
+      }
+    }
+  }
+
   return numOpsFailed;
 }
 
@@ -277,6 +558,12 @@ int TestAstroBWTv3(bool useLookup=false)
     {
       printf("SUCCESS! pow(%s) expected %s received %s\n", t.in.c_str(), t.out.c_str(), actualRes.c_str());
     }
+
+    // for (const auto& [a, b, c] : worker->repeats) {
+    //   printf("op: %d, input: %d, dataLen: %d\n", a, b, c);
+    // }
+
+    // printf("repeated branch ops: %d, total ops: %d\n", worker->repeats.size(), worker->tries);
 
     delete[] buf;
     i++;
@@ -3596,7 +3883,7 @@ void optest_avx2(int op, workerData &worker, byte testData[32], OpTestResult &te
     //worker.pos1 = 0; worker.pos2 = 32;
     worker.chunk = worker.step_3;
     worker.prev_chunk = worker.chunk;
-    branchComputeCPU_avx2(worker, true);
+    branchComputeCPU_avx2_zOptimized(worker, true);
   }
 
   auto test_end = std::chrono::steady_clock::now();

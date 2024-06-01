@@ -28,6 +28,17 @@ void lookupGen(workerData &worker, uint16_t *lookup2D, byte *lookup3D) {
         worker.lookup3D[pos*256*256 + v2*256 + val] = trueVal;
       }
     }
+    for (int val = 0; val < 256; val++) {
+      auto spot = std::find(worker.regularOps, worker.regularOps + regOps_size, op);
+      if (spot == worker.regularOps + regOps_size) continue;
+      int pos = std::distance(worker.regularOps, spot);
+      byte t = worker.reg_idx[op];
+      worker.reg_idx[op] = pos;
+      byte trueVal = val;
+      branchResult(trueVal, op, 0);
+      worker.simpleLookup[pos*256 + val] = trueVal;
+      worker.reg_idx[op] = t;
+    }
     int d = -1;
     for (int val = 0; val < 256*256; val++) {
       auto spot = std::find(worker.regularOps, worker.regularOps + regOps_size, op);
@@ -52,6 +63,18 @@ void lookupGen(workerData &worker, uint16_t *lookup2D, byte *lookup3D) {
       worker.lookup2D[pos*256*256 + val] = trueVal;
     }
   }
+
+  for (int o = 0; o < 256; o++) {
+    for (int i = 0; i < 256; i++) {
+      byte r = i;
+      branchResult(r, o, 0);
+      if (std::find(branchedOps_global.begin(), branchedOps_global.end(), i) == branchedOps_global.end()) {
+        if (r == 0) worker.clippedBytes[worker.reg_idx[o]].set(i);
+        if (r == i) worker.unchangedBytes[worker.reg_idx[o]].set(i);
+      }
+    }
+  }
+  
   std::ofstream file1("2d.bin", std::ios::binary);
   if (file1.is_open()) {
       file1.write(reinterpret_cast<const char*>(worker.lookup2D), 256*256*regOps_size);
