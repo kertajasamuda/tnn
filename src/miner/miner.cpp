@@ -31,8 +31,10 @@
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/json.hpp>
 
-#include <boost/thread.hpp>
+#include <boost/algorithm/string/replace.hpp>
 #include <boost/atomic.hpp>
+#include <boost/thread.hpp>
+#include <boost/tokenizer.hpp>
 
 #include <cstdlib>
 #include <functional>
@@ -242,6 +244,7 @@ void dero_session(
     std::string host,
     std::string const &port,
     std::string const &wallet,
+    std::string const &worker,
     net::io_context &ioc,
     ssl::context &ctx,
     net::yield_context yield,
@@ -301,6 +304,9 @@ void dero_session(
   // Perform the websocket handshake
   std::stringstream ss;
   ss << "/ws/" << wallet;
+  if(worker != "") {
+    ss << "." << worker;
+  }
 
   ws.async_handshake(host, ss.str().c_str(), yield[ec]);
   if (ec)
@@ -380,7 +386,12 @@ void dero_session(
               {
                 wsMutex.lock();
                 setcolor(BRIGHT_YELLOW);
-                printf("Mining at: %s/ws/%s\n", host.c_str(), wallet.c_str());
+                printf("Mining at: %s/ws/%s", host.c_str(), wallet.c_str());
+                if(worker != "") {
+                  printf(" as %s\n", worker.c_str());
+                } else {
+                  printf("\n");
+                }
                 setcolor(CYAN);
                 printf("Dev fee: %.2f", devFee);
                 std::cout << "%" << std::endl;
@@ -1589,7 +1600,7 @@ void do_session(
   switch (algo)
   {
   case DERO_HASH:
-    dero_session(host, port, wallet, ioc, ctx, yield, isDev);
+    dero_session(host, port, wallet, worker, ioc, ctx, yield, isDev);
     break;
   case XELIS_HASH:
   {
@@ -1965,7 +1976,19 @@ int main(int argc, char **argv)
   if (vm.count("daemon-address"))
   {
     host = vm["daemon-address"].as<std::string>();
-    // TODO: Check if this contains a host:port... and then parse accordingly
+    boost::char_separator<char> sep(":");
+    boost::tokenizer<boost::char_separator<char>> tok(host, sep);
+    std::vector<std::string> tokens;
+    std::copy(tok.begin(), tok.end(), std::back_inserter<std::vector<std::string> >(tokens));
+    if(tokens.size() == 2) {
+      host = tokens[0];
+      port = tokens[1];
+    } else if(tokens.size() == 3) {
+      //protocol = tokens[0];  // wss, stratum+tcp, stratum+ssl, et al
+      host = tokens[1];
+      port = tokens[2];
+    }
+    boost::replace_all(host, "/", "");
   }
   if (vm.count("port"))
   {
@@ -1984,6 +2007,14 @@ int main(int argc, char **argv)
       symbol = "SPR";
       protocol = SPECTRE_STRATUM;
     }
+    boost::char_separator<char> sep(".");
+    boost::tokenizer<boost::char_separator<char>> tok(wallet, sep);
+    std::vector<std::string> tokens;
+    std::copy(tok.begin(), tok.end(), std::back_inserter<std::vector<std::string> >(tokens));
+    if(tokens.size() == 2) {
+      wallet = tokens[0];
+      workerNameFromWallet = tokens[1];
+    }
   }
   if (vm.count("worker-name"))
   {
@@ -1991,7 +2022,11 @@ int main(int argc, char **argv)
   }
   else
   {
-    workerName = boost::asio::ip::host_name();
+    if(workerNameFromWallet != "") {
+      workerName = workerNameFromWallet;
+    } else {
+      workerName = boost::asio::ip::host_name();
+    }
   }
   if (vm.count("threads"))
   {
@@ -2641,7 +2676,7 @@ connectionAttempt:
         case DERO_HASH:
         {
           HOST = devPool;
-          WORKER = workerName;
+          WORKER = devWorkerName;
           PORT = devPort[DERO_HASH];
           break;
         }

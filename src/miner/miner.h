@@ -42,6 +42,7 @@ std::string host = nullArg;
 std::string port = nullArg;
 std::string wallet = nullArg;
 std::string workerName = "default";
+std::string workerNameFromWallet = "";
 
 bool useStratum = false;
 
