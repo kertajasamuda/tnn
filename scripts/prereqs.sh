@@ -11,7 +11,7 @@ fi
 if [[ -f /etc/lsb-release ]]; then
   source /etc/lsb-release
   $SUDO apt update
-  $SUDO apt install -y git wget build-essential cmake clang libssl-dev libudns-dev libfmt-dev libc++-dev lld
+  $SUDO apt install -y git wget build-essential cmake clang libssl-dev libudns-dev libfmt-dev libc++-dev lld libsodium-dev
   if [[ "$DISTRIB_CODENAME" == "noble" ]]; then
     $SUDO apt install libboost1.83-all-dev
   fi
