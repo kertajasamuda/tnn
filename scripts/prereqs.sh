@@ -13,6 +13,6 @@ if [[ -f /etc/lsb-release ]]; then
   $SUDO apt update
   $SUDO apt install -y git wget build-essential cmake clang libssl-dev libudns-dev libfmt-dev libc++-dev lld libsodium-dev
   if [[ "$DISTRIB_CODENAME" == "noble" ]]; then
-    $SUDO apt install libboost1.83-all-dev
+    $SUDO apt install -y libboost1.83-all-dev
   fi
 fi
