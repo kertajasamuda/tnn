@@ -1314,6 +1314,8 @@ void spectre_stratum_session(
 
   SpectreStratum::jobCache jobCache;
 
+  std::string chopQueue = "NULL";
+
   while (true)
   {
     try
@@ -1418,12 +1420,59 @@ void spectre_stratum_session(
               handleSpectreStratumResponse(sRPC, isDev);
             } 
           } catch(const std::exception &e){
-            setcolor(RED);
-            printf("BEFORE PACKET\n");
-            std::cout << packet << std::endl;
-            printf("AFTER PACKET\n");
-            std::cerr << e.what() << std::endl;
-            setcolor(BRIGHT_WHITE);
+            // printf("\n\n packet count: %d, msg size: %llu\n\n", packets.size(), trans);
+
+            // setcolor(RED);
+            // printf("BEFORE PACKET\n");
+            // std::cout << packet << std::endl;
+            // printf("AFTER PACKET\n");
+            // std::cerr << e.what() << std::endl;
+            // setcolor(BRIGHT_WHITE);
+            bool tryParse = (chopQueue.compare("NULL") != 0);
+
+            if (tryParse) {
+              chopQueue += packet;
+              // printf("resulting json string: %s\n\n", chopQueue.c_str());
+              try
+              {
+                boost::json::object sRPC = boost::json::parse(chopQueue.c_str()).as_object();
+                if (sRPC.contains("method"))
+                {
+                  if (std::string(sRPC.at("method").as_string().c_str()).compare(SpectreStratum::s_ping) == 0)
+                  {
+                    boost::json::object pong({{"id", sRPC.at("id").get_uint64()},
+                                              {"method", SpectreStratum::pong.method}});
+                    std::string pongPacket = std::string(boost::json::serialize(pong).c_str()) + "\n";
+                    trans = boost::asio::async_write(
+                        stream,
+                        boost::asio::buffer(pongPacket),
+                        yield[ec]);
+                    if (ec && trans > 0)
+                      return fail(ec, "Stratum pong");
+                  }
+                  else
+                    handleSpectreStratumPacket(sRPC, &jobCache, isDev);
+                }
+                else
+                {
+                  handleSpectreStratumResponse(sRPC, isDev);
+                }
+                chopQueue = "NULL";
+                // printf("COMBINE WORKED!\n\n");
+              }
+              catch (const std::exception &e)
+              {
+                setcolor(RED);
+                printf("COMBINE FAILED\n\nBEFORE PACKET\n");
+                std::cout << chopQueue << std::endl;
+                printf("AFTER PACKET\n");
+                std::cerr << e.what() << std::endl;
+                setcolor(BRIGHT_WHITE);
+              }
+            } else {
+              chopQueue = packet;
+              // printf("partial json start = %s\n", chopQueue.c_str());
+            } 
           }
         }
       }
