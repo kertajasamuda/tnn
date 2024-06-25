@@ -21,8 +21,6 @@
 
 const int workerThreads = 2;
 
-const int reportInterval = 1;
-
 std::string symbol = nullArg;
 std::string port = nullArg;
 std::string workerName = "default";
@@ -31,6 +29,7 @@ bool useStratum = false;
 
 int miningAlgo = DERO_HASH;
 
+int reportInterval = 3;
 int threads = 0;
 int testOp = -1;
 int testLen = -1;

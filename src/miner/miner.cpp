@@ -279,6 +279,10 @@ int main(int argc, char **argv)
   {
     threads = vm["threads"].as<int>();
   }
+  if (vm.count("report-interval"))
+  {
+    reportInterval = vm["report-interval"].as<int>();
+  }
   if (vm.count("dev-fee"))
   {
     try
@@ -677,7 +681,7 @@ Mining:
   auto start_time = std::chrono::steady_clock::now();
   if (broadcastStats)
   {
-    boost::thread BROADCAST(BroadcastServer::serverThread, &rate30sec, &accepted, &rejected, versionString);
+    boost::thread BROADCAST(BroadcastServer::serverThread, &rate30sec, &accepted, &rejected, versionString, reportInterval);
   }
 
   while (!isConnected)
@@ -754,7 +758,7 @@ startReporting:
       //   rate1min.push_back(currentHashes);
       // }
 
-      float ratio = 1000.0f / milliseconds;
+      float ratio = (1000.0f / milliseconds) * reportInterval;
       if (rate30sec.size() <= 30 / reportInterval)
       {
         rate30sec.push_back((int64_t)(currentHashes * ratio));

@@ -171,12 +171,9 @@ public:
 
   // std::vector<std::tuple<int,int,int>> repeats;
 
-  alignas(32) byte salsaInput[256] = {0};
-  alignas(32) byte op;
-  #if defined(__AVX2__)
-  __m256i data;
-  __m256i old;
-  #endif
+  byte salsaInput[256] = {0};
+  byte op;
+
   byte pos1;
   byte pos2;
   byte t1;
@@ -188,38 +185,38 @@ public:
   byte *chunk;
   byte *prev_chunk;
 
-  alignas(32) byte simpleLookup[regOps_size*(256*256)];
-  alignas(32) byte lookup3D[branchedOps_size*256*256];
-  alignas(32) uint16_t lookup2D[regOps_size*(256*256)];
+  byte simpleLookup[regOps_size*(256*256)];
+  byte lookup3D[branchedOps_size*256*256];
+  uint16_t lookup2D[regOps_size*(256*256)];
 
   bool isSame = false;
 
-  alignas(32) byte sHash[32];
-  alignas(32) byte sha_key[32];
-  alignas(32) byte sha_key2[32];
-  alignas(32) byte sData[MAX_LENGTH+64];
-  alignas(32) byte chunkCache[256];
+  byte sHash[32];
+  byte sha_key[32];
+  byte sha_key2[32];
+  byte sData[MAX_LENGTH+64];
+  byte chunkCache[256];
 
-  alignas(32) std::bitset<256> clippedBytes[regOps_size];
-  alignas(32) std::bitset<256> unchangedBytes[regOps_size];
+  std::bitset<256> clippedBytes[regOps_size];
+  std::bitset<256> unchangedBytes[regOps_size];
 
   byte branchedOps[branchedOps_size*2];
   byte regularOps[regOps_size*2];
 
-  alignas(32) byte branched_idx[256];
-  alignas(32) byte reg_idx[256];
+  byte branched_idx[256];
+  byte reg_idx[256];
 
-  alignas(32) uint64_t random_switcher;
+  uint64_t random_switcher;
 
-  alignas(32) uint64_t lhash;
-  alignas(32) uint64_t prev_lhash;
-  alignas(32) uint64_t tries;
+  uint64_t lhash;
+  uint64_t prev_lhash;
+  uint64_t tries;
 
-  alignas(32) byte counter[64];
+  byte counter[64];
 
-  alignas(32) int bA[256];
-  alignas(32) int bB[256*256];
-  alignas(32) int32_t sa[MAX_LENGTH];
+  int bA[256];
+  int bB[256*256];
+  int32_t sa[MAX_LENGTH];
   
   std::vector<byte> opsA;
   std::vector<byte> opsB;
@@ -619,7 +616,7 @@ inline void generateInitVector(std::uint8_t (&iv_buff)[N])
 {
   using random_bytes_engine = std::independent_bits_engine<std::default_random_engine,
                                                            CHAR_BIT, unsigned short>;
-  random_bytes_engine rbe;
+  random_bytes_engine rbe(rand());
 
   std::generate(std::begin(iv_buff), std::end(iv_buff), rbe);
 }
@@ -681,6 +678,10 @@ void mineDero(int tid);
 void processAfterMarker(workerData& worker);
 void lookupCompute(workerData &worker, bool isTest);
 void branchComputeCPU(workerData &worker, bool isTest);
+
+uint8_t wolfBranch(uint8_t val, uint8_t pos2val, uint32_t opcode);
+void wolfPermute(uint8_t *in, uint8_t *out, uint8_t op, uint8_t pos1, uint8_t pos2);
+void wolfCompute(workerData &worker, bool isTest);
 
 #if defined(__AVX2__)
 void branchComputeCPU_avx2(workerData &worker, bool isTest);
