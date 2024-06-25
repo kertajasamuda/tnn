@@ -68,6 +68,9 @@ build-linux:
     - cd ../
     - mv ./build/Tnn-miner ./Tnn-miner
     - tar -czvf ${LINUX_AMD64_TGZ} ./Tnn-miner
+    - curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ${LINUX_AMD64_TGZ} ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${PACKAGENAME}/0.0.1/${LINUX_AMD64_TGZ}
+
+
   after_script:
     - echo "LINUX_BUILD_JOB_ID=$CI_JOB_ID" >> linux-job.env
   artifacts:
@@ -191,7 +194,7 @@ release_job:
     assets:
       links:
         - name: "${LINUX_AMD64_TGZ}"
-          url: "https://gitlab.com/${CI_PROJECT_PATH}/-/jobs/${LINUX_BUILD_JOB_ID}/artifacts/download"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${PACKAGENAME}/0.0.1/${LINUX_AMD64_TGZ}"
           filepath: "/${LINUX_AMD64_TGZ}"
         #- name: "${MACOS_ARM64_TGZ}"
         #  url: "https://gitlab.com/${CI_PROJECT_PATH}/-/jobs/${MACOS_BUILD_JOB_ID}/artifacts/download"
