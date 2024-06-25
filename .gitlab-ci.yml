@@ -28,7 +28,7 @@ variables:
 
 .macos_saas_runners:
   tags:
-    - saas-macos-large-m2pro
+    - saas-macos-medium-m1
   image: macos-14-xcode-15
   before_script:
     - echo "started by ${GITLAB_USER_NAME} / @${GITLAB_USER_LOGIN}"
@@ -115,8 +115,9 @@ build-windows:
   stage: build
   script:
     - echo "running scripts in the build job"
+    - $PSVersionTable.PSVersion
     - .\scripts\prereqs.bat ci
-    - .\scripts\build.bat ci
+    - .\scripts\build.ps1 ci
     - dir .\build\
     - move build\Tnn-miner.exe .\
     - 7z.exe a ${WIN_AMD64_ZIP} Tnn-miner.exe
@@ -145,7 +146,7 @@ test:
     - ls -la ./
   script:
     - tar -xvf ./${LINUX_AMD64_TGZ}
-    - gdb --batch -ex "run" -ex "bt" --args ./Tnn-miner --dero-test
+    - gdb --return-child-result --batch -ex "run" -ex "bt" -ex "cont" -ex "exit" --args ./build/Tnn-miner --dero-test
 
 #upload:
 #  stage: upload
