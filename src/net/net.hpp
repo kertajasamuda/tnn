@@ -36,17 +36,17 @@ namespace ssl = boost::asio::ssl;       // from <boost/asio/ssl.hpp>
 
 using json = nlohmann::json;
 
-static json job = json({});
-static json devJob = json({});
+extern json job;
+extern json devJob;
 
-static std::string currentBlob;
-static std::string devBlob;
+extern std::string currentBlob;
+extern std::string devBlob;
 
-static boost::json::object share = {};
-static boost::json::object devShare = {};
+extern boost::json::object share;
+extern boost::json::object devShare;
 
-static bool submitting = false;
-static bool submittingDev = false;
+extern bool submitting;
+extern bool submittingDev;
 
 
 tcp::endpoint resolve_host(boost::mutex &wsMutex, net::io_context &ioc, net::yield_context yield, std::string host, std::string port);

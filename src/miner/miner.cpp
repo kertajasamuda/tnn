@@ -15,7 +15,7 @@
 
 #define FMT_HEADER_ONLY
 
-#include "tnn-common.h"
+#include "tnn-common.hpp"
 #include "rootcert.h"
 #include "DNSResolver.hpp"
 #include "net.hpp"
@@ -71,6 +71,8 @@
 #include <broadcastServer.hpp>
 #include <stratum.h>
 
+#include <exception>
+
 #if defined(_WIN32)
 #include <Windows.h>
 #else
@@ -85,6 +87,45 @@ LPTSTR lpNxtPage;  // Address of the next page to ask for
 DWORD dwPages = 0; // Count of pages gotten so far
 DWORD dwPageSize;  // Page size on this computer
 #endif
+
+/* Start definitions from tnn-common.hpp */
+int protocol = XELIS_SOLO;
+
+std::string host = "NULL";
+std::string wallet = "NULL";
+
+// Dev fee config
+// Dev fee is a % of hashrate
+int batchSize = 5000;
+double minFee = 1.0;
+double devFee = 2.5;
+const char *devPool = "dero.rabidmining.com";
+
+int jobCounter;
+
+int blockCounter;
+int miniBlockCounter;
+int rejected;
+int accepted;
+//static int firstRejected;
+
+uint64_t hashrate;
+uint64_t ourHeight;
+uint64_t devHeight;
+
+uint64_t difficulty;
+uint64_t difficultyDev;
+
+double doubleDiff;
+double doubleDiffDev;
+
+std::vector<int64_t> rate5min;
+std::vector<int64_t> rate1min;
+std::vector<int64_t> rate30sec;
+
+bool isConnected = false;
+bool devConnected = false;
+/* End definitions from tnn-common.hpp */
 
 // #include <cuda_runtime.h>
 
@@ -1272,9 +1313,10 @@ waitForJob:
       if (!isConnected)
         break;
     }
-    catch (...)
+    catch (std::exception& e)
     {
       std::cerr << "Error in POW Function" << std::endl;
+      std::cerr << e.what() << std::endl;
     }
     if (!isConnected)
       break;
@@ -1521,11 +1563,10 @@ waitForJob:
       if (!isConnected)
         break;
     }
-    catch (...)
+    catch (std::exception& e)
     {
-     //  mutex.lock();
       std::cerr << "Error in POW Function" << std::endl;
-     //  mutex.unlock();
+      std::cerr << e.what() << std::endl;
     }
     if (!isConnected)
       break;
@@ -1763,11 +1804,10 @@ waitForJob:
       if (!isConnected)
         break;
     }
-    catch (...)
+    catch (std::exception& e)
     {
-      ////  mutex.lock();
       std::cerr << "Error in POW Function" << std::endl;
-      ////  mutex.unlock();
+      std::cerr << e.what() << std::endl;
     }
     if (!isConnected)
       break;

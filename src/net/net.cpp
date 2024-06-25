@@ -1,4 +1,4 @@
-#include "tnn-common.h"
+#include "tnn-common.hpp"
 #include "net.hpp"
 #include "hex.h"
 
@@ -26,6 +26,20 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 using json = nlohmann::json;
 
 boost::mutex wsMutex;
+
+/* Start definitions from net.hpp */
+json job = json({});
+json devJob = json({});
+
+std::string currentBlob;
+std::string devBlob;
+
+boost::json::object share = {};
+boost::json::object devShare = {};
+
+bool submitting = false;
+bool submittingDev = false;
+/* End definitions from net.hpp */
 
 // Report a failure
 void fail(beast::error_code ec, char const *what) noexcept
