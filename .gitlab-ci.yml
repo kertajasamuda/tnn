@@ -68,8 +68,7 @@ build-linux:
     - cd ../
     - mv ./build/Tnn-miner ./Tnn-miner
     - tar -czvf ${LINUX_AMD64_TGZ} ./Tnn-miner
-    - curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ${LINUX_AMD64_TGZ} ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${PACKAGENAME}/0.0.1/${LINUX_AMD64_TGZ}
-
+    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ${LINUX_AMD64_TGZ} ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${PACKAGENAME}/0.0.1/${LINUX_AMD64_TGZ}'
 
   after_script:
     - echo "LINUX_BUILD_JOB_ID=$CI_JOB_ID" >> linux-job.env
