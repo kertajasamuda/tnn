@@ -146,7 +146,7 @@ test:
     - ls -la ./
   script:
     - tar -xvf ./${LINUX_AMD64_TGZ}
-    - gdb --return-child-result --batch -ex "run" -ex "bt" -ex "cont" -ex "exit" --args ./build/Tnn-miner --dero-test
+    - gdb --return-child-result --batch -ex "run" -ex "bt" -ex "cont" -ex "exit" --args ./Tnn-miner --dero-test
 
 #upload:
 #  stage: upload
