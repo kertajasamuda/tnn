@@ -45,8 +45,6 @@
 
 #include <hex.h>
 #include <astrobwtv3.h>
-#include <xelis-hash.hpp>
-#include <spectrex.h>
 
 #include <astrotest.hpp>
 #include <thread>
